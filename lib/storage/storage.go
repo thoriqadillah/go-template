@@ -35,8 +35,6 @@ func New(name string, opts ...Option) Storage {
 		tmpDir: tmp + "/lib/storage/tmp",
 	}
 
-	log.Println(opt.tmpDir)
-
 	for _, option := range opts {
 		option(opt)
 	}
