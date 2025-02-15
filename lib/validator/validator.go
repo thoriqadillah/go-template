@@ -9,7 +9,7 @@ import (
 
 // to cache the validator (recommended by the docs)
 var uni *ut.UniversalTranslator
-var validate = validator.New()
+var validate = validator.New(validator.WithRequiredStructEnabled())
 var trans ut.Translator
 
 type Validator interface {
