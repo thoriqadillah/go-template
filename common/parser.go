@@ -8,6 +8,7 @@ import (
 type Parser interface {
 	String(defaults ...string) string
 	Int(defaults ...int) int
+	Bool(defaults ...bool) bool
 	Float64(defaults ...float64) float64
 	Time(defaults ...time.Time) time.Time
 	Duration(defaults ...time.Duration) time.Duration
@@ -31,6 +32,18 @@ func (p *parser) String(defaults ...string) string {
 	}
 
 	return p.value
+}
+
+func (p *parser) Bool(defaults ...bool) bool {
+	if p.value == "" && len(defaults) > 0 {
+		return defaults[0]
+	}
+
+	if p.value == "" && len(defaults) == 0 {
+		return false
+	}
+
+	return p.value == "true"
 }
 
 func (p *parser) Int(defaults ...int) int {
