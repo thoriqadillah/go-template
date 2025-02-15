@@ -2,6 +2,7 @@ package example
 
 import (
 	"app/lib/notification/notifier"
+	"app/lib/storage"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -34,9 +35,29 @@ func (s *exampleService) example(c echo.Context) error {
 	return c.String(http.StatusOK, "Hello, World!")
 }
 
+func (s *exampleService) uploadFile(c echo.Context) error {
+	file, err := c.FormFile("file")
+	if err != nil {
+		return err
+	}
+
+	src, err := file.Open()
+	if err != nil {
+		return err
+	}
+
+	err = storage.New("local").Upload(file.Filename, src)
+	if err != nil {
+		return err
+	}
+
+	return c.String(http.StatusOK, "File uploaded")
+}
+
 func (s *exampleService) CreateRoutes(app *echo.Echo) {
 	router := app.Group("example")
 
 	router.GET("/", s.example)
 	router.GET("/email", s.sendEmail)
+	router.POST("/upload", s.uploadFile)
 }

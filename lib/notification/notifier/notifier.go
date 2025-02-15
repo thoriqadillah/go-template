@@ -7,13 +7,44 @@ import (
 
 type option struct {
 	name        string
-	authMethod  string
 	host        string
 	username    string
 	password    string
 	port        int
 	secure      bool
 	templateDir string
+}
+
+type Option func(*option)
+
+func WithHost(host string) Option {
+	return func(o *option) {
+		o.host = host
+	}
+}
+
+func WithUsername(username string) Option {
+	return func(o *option) {
+		o.username = username
+	}
+}
+
+func WithPassword(password string) Option {
+	return func(o *option) {
+		o.password = password
+	}
+}
+
+func WithPort(port int) Option {
+	return func(o *option) {
+		o.port = port
+	}
+}
+
+func WithSecure(secure bool) Option {
+	return func(o *option) {
+		o.secure = secure
+	}
 }
 
 type Send struct {
@@ -38,8 +69,8 @@ type Notifier interface {
 	Send(s Send) error
 }
 
-func New(name string) Notifier {
-	option := &option{
+func New(name string, opts ...Option) Notifier {
+	opt := &option{
 		name:        env.AppName,
 		host:        env.EmailHost,
 		port:        env.EmailPort,
@@ -49,11 +80,15 @@ func New(name string) Notifier {
 		templateDir: "", // TODO: embed the templates
 	}
 
+	for _, option := range opts {
+		option(opt)
+	}
+
 	provider, ok := providers[name]
 	if !ok {
 		log.Fatalf("Notifier provider %s not found", name)
 		return nil
 	}
 
-	return provider(option)
+	return provider(opt)
 }
