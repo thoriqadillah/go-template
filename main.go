@@ -2,7 +2,7 @@ package main
 
 import (
 	"app/env"
-	"fmt"
+	"app/server"
 	"regexp"
 
 	"github.com/joho/godotenv"
@@ -12,17 +12,18 @@ import (
 
 func main() {
 	godotenv.Load()
-	app := echo.New()
+	echo := echo.New()
 
-	app.Use(middleware.Recover())
-	app.Use(middleware.Logger())
-	app.Use(middleware.Gzip())
-	app.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+	echo.Use(middleware.Recover())
+	echo.Use(middleware.Logger())
+	echo.Use(middleware.Gzip())
+	echo.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOriginFunc: func(origin string) (bool, error) {
 			re := regexp.MustCompile(env.CorsOrigin)
 			return re.MatchString(origin), nil
 		},
 	}))
 
-	app.Start(fmt.Sprintf(":%d", env.Port))
+	app := server.Create(echo)
+	app.Start()
 }

@@ -11,5 +11,5 @@ func env(key string) common.Parser {
 
 var (
 	CorsOrigin = env("CORS_ORIGIN").String("(.*?)")
-	Port       = env("PORT").Int(8080)
+	Port       = env("PORT").String(":8080")
 )
