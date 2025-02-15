@@ -22,6 +22,16 @@ func (s *exampleService) Close() {
 	// Do something when the service is closed
 }
 
+func (s *exampleService) validate(c echo.Context) error {
+	// try to pass a json with and without required field
+	var foo Foo
+	if err := c.Bind(&foo); err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, foo)
+}
+
 func (s *exampleService) sendEmail(c echo.Context) error {
 	notifier.New("email").Send(notifier.Send{
 		Subject: "Test Email",
@@ -60,4 +70,5 @@ func (s *exampleService) CreateRoutes(app *echo.Echo) {
 	router.GET("/", s.example)
 	router.GET("/email", s.sendEmail)
 	router.POST("/upload", s.uploadFile)
+	router.POST("/validate", s.validate)
 }
