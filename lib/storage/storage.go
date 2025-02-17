@@ -21,7 +21,7 @@ func WithTmpDir(tmpDir string) Option {
 
 type Storage interface {
 	Serve(filename string) (io.ReadCloser, error)
-	Upload(filename string, src io.Reader) error
+	Upload(filename string, src io.Reader) (string, error)
 	Delete(filename string) error
 }
 

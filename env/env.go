@@ -11,8 +11,8 @@ func env(key string) common.Parser {
 
 var (
 	AppName       = env("APP_NAME").String("Echo")
-	Dev           = env("ENV").String("development") == "development"
 	Env           = env("ENV").String("development")
+	Dev           = env("ENV").String("development") == "development"
 	Prod          = env("ENV").String("production") == "production"
 	CorsOrigin    = env("CORS_ORIGIN").String("(.*?)")
 	Port          = env("PORT").String(":8080")
@@ -22,4 +22,5 @@ var (
 	EmailSecure   = env("EMAIL_SECURE").Bool(false)
 	EmailUsername = env("EMAIL_USERNAME").String("app@example.com")
 	EmailPassword = env("EMAIL_PASSWORD").String("password")
+	StorageDriver = env("STORAGE_DRIVER").String("local")
 )

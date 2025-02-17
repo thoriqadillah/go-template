@@ -1,17 +1,24 @@
 package example
 
 import (
+	"app/env"
 	"app/lib/notification/notifier"
 	"app/lib/storage"
 	"net/http"
+	"path/filepath"
 
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )
 
-type exampleService struct{}
+type exampleService struct {
+	storage storage.Storage
+}
 
 func CreateService() *exampleService {
-	return &exampleService{}
+	return &exampleService{
+		storage: storage.New(env.StorageDriver),
+	}
 }
 
 func (s *exampleService) Init() {
@@ -56,12 +63,14 @@ func (s *exampleService) uploadFile(c echo.Context) error {
 		return err
 	}
 
-	err = storage.New("local").Upload(file.Filename, src)
+	ext := filepath.Ext(file.Filename)
+	filename := uuid.NewString() + ext
+	url, err := s.storage.Upload(filename, src)
 	if err != nil {
 		return err
 	}
 
-	return c.String(http.StatusOK, "File uploaded")
+	return c.String(http.StatusOK, url)
 }
 
 func (s *exampleService) CreateRoutes(app *echo.Echo) {

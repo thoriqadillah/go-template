@@ -1,7 +1,13 @@
 package server
 
-import "app/server/example"
+import (
+	"app/server/example"
+	"app/server/storage"
+)
 
 func init() {
-	Register(example.CreateService())
+	Register(
+		example.CreateService(),
+		storage.CreateService(),
+	)
 }
