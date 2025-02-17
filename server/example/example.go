@@ -42,7 +42,7 @@ func (s *exampleService) validate(c echo.Context) error {
 }
 
 func (s *exampleService) sendEmail(c echo.Context) error {
-	err := s.notifier.Send(notifier.Send{
+	err := s.notifier.Send(notifier.Message{
 		Subject:  "Test Email",
 		Template: "example.html",
 	})

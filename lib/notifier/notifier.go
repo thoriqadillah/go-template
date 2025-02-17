@@ -47,9 +47,9 @@ func WithSecure(secure bool) Option {
 	}
 }
 
-type Send struct {
+type Message struct {
 	Subject  string
-	Message  string
+	Text     string
 	Template string
 	From     string
 	To       []string
@@ -66,7 +66,7 @@ func register(name string, impl Factory) {
 }
 
 type Notifier interface {
-	Send(s Send) error
+	Send(s Message) error
 }
 
 func New(name string, opts ...Option) Notifier {

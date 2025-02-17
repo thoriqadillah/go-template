@@ -31,13 +31,14 @@ func createMailer(option *option) Notifier {
 	}
 }
 
-func (e *emailer) Send(s Send) error {
-	msg := s.Message
+func (e *emailer) Send(m Message) error {
+	// TODO: send email with background job
+	msg := m.Text
 	mimetype := "text/plain"
 
-	if s.Template != "" {
+	if m.Template != "" {
 		mimetype = "text/html"
-		bytes, err := template.ReadFile(fmt.Sprintf("template/%s", s.Template))
+		bytes, err := template.ReadFile(fmt.Sprintf("template/%s", m.Template))
 		if err != nil {
 			return err
 		}
@@ -51,11 +52,11 @@ func (e *emailer) Send(s Send) error {
 	}
 
 	message := gomail.NewMessage()
-	message.SetHeader("From", s.From)
-	message.SetHeader("To", s.To...)
-	message.SetHeader("Subject", s.Subject)
-	message.SetHeader("Bcc", s.Bcc...)
-	message.SetHeader("Cc", s.Cc...)
+	message.SetHeader("From", m.From)
+	message.SetHeader("To", m.To...)
+	message.SetHeader("Subject", m.Subject)
+	message.SetHeader("Bcc", m.Bcc...)
+	message.SetHeader("Cc", m.Cc...)
 	message.SetBody(mimetype, msg)
 
 	return e.mailer.DialAndSend(message)
