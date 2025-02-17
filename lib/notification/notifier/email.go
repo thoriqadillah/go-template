@@ -2,10 +2,17 @@ package notifier
 
 import (
 	"app/env"
-	"log"
+	"app/lib/logger"
+	"embed"
+	"fmt"
 
 	gomail "gopkg.in/gomail.v2"
 )
+
+var zap = logger.Logger()
+
+//go:embed template
+var template embed.FS
 
 type emailer struct {
 	mailer *gomail.Dialer
@@ -25,14 +32,21 @@ func createMailer(option *option) Notifier {
 }
 
 func (e *emailer) Send(s Send) error {
-	if env.Dev {
-		log.Println("Sending email...")
-		if s.Html != "" {
-			log.Println(s.Html)
-		} else {
-			log.Println(s.Message)
+	msg := s.Message
+	mimetype := "text/plain"
+
+	if s.Template != "" {
+		mimetype = "text/html"
+		bytes, err := template.ReadFile(fmt.Sprintf("template/%s", s.Template))
+		if err != nil {
+			return err
 		}
 
+		msg = string(bytes)
+	}
+
+	if env.Dev {
+		zap.Info(msg)
 		return nil
 	}
 
@@ -42,12 +56,7 @@ func (e *emailer) Send(s Send) error {
 	message.SetHeader("Subject", s.Subject)
 	message.SetHeader("Bcc", s.Bcc...)
 	message.SetHeader("Cc", s.Cc...)
-
-	if s.Html != "" {
-		message.SetBody("text/html", s.Html)
-	} else {
-		message.SetBody("text/plain", s.Message)
-	}
+	message.SetBody(mimetype, msg)
 
 	return e.mailer.DialAndSend(message)
 }

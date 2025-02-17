@@ -48,13 +48,13 @@ func WithSecure(secure bool) Option {
 }
 
 type Send struct {
-	Subject string
-	Message string
-	Html    string
-	From    string
-	To      []string
-	Bcc     []string
-	Cc      []string
+	Subject  string
+	Message  string
+	Template string
+	From     string
+	To       []string
+	Bcc      []string
+	Cc       []string
 }
 
 type Factory func(option *option) Notifier

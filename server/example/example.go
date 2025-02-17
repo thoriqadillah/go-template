@@ -40,10 +40,14 @@ func (s *exampleService) validate(c echo.Context) error {
 }
 
 func (s *exampleService) sendEmail(c echo.Context) error {
-	notifier.New("email").Send(notifier.Send{
-		Subject: "Test Email",
-		Message: "This is a test email",
+	err := notifier.New("email").Send(notifier.Send{
+		Subject:  "Test Email",
+		Template: "example.html",
 	})
+
+	if err != nil {
+		return err
+	}
 
 	return c.String(http.StatusOK, "Email sent")
 }
