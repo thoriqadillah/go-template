@@ -2,7 +2,7 @@ package example
 
 import (
 	"app/env"
-	"app/lib/notification/notifier"
+	"app/lib/notifier"
 	"app/lib/storage"
 	"net/http"
 	"path/filepath"
