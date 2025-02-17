@@ -2,7 +2,7 @@ package main
 
 import (
 	"app/env"
-	"app/lib/logger"
+	"app/lib/log"
 	"app/lib/validator"
 	"app/server"
 	"net/http"
@@ -40,10 +40,10 @@ func main() {
 	echo := echo.New()
 	echo.Binder = &customBinder{}
 
-	zap := logger.Logger()
+	logger := log.Logger()
 
 	echo.Use(middleware.Recover())
-	echo.Use(echozap.ZapLogger(zap))
+	echo.Use(echozap.ZapLogger(logger))
 	echo.Use(middleware.Gzip())
 	echo.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOriginFunc: func(origin string) (bool, error) {

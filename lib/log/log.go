@@ -1,4 +1,4 @@
-package logger
+package log
 
 import (
 	"go.uber.org/zap"
@@ -11,7 +11,5 @@ func Logger() *zap.Logger {
 }
 
 func init() {
-	if logger == nil {
-		logger, _ = zap.NewProduction()
-	}
+	logger, _ = zap.NewProduction()
 }

@@ -1,8 +1,6 @@
 package validator
 
 import (
-	"sync"
-
 	"github.com/go-playground/locales/en"
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
@@ -13,7 +11,6 @@ import (
 var uni *ut.UniversalTranslator
 var validate = validator.New(validator.WithRequiredStructEnabled())
 var trans ut.Translator
-var once sync.Once
 
 type Validator interface {
 	Validate() error
@@ -34,12 +31,10 @@ func Translate(err error) string {
 }
 
 func init() {
-	once.Do(func() {
-		en := en.New()
-		uni = ut.New(en, en)
-		trans, _ = uni.GetTranslator("en")
-		en_translations.RegisterDefaultTranslations(validate, trans)
+	en := en.New()
+	uni = ut.New(en, en)
+	trans, _ = uni.GetTranslator("en")
+	en_translations.RegisterDefaultTranslations(validate, trans)
 
-		// TODO: register custom validators
-	})
+	// TODO: register custom validators
 }

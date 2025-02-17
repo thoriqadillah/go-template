@@ -2,6 +2,7 @@ package server
 
 import (
 	"app/env"
+	"app/lib/log"
 	"context"
 	"net/http"
 	"os"
@@ -10,6 +11,8 @@ import (
 
 	"github.com/labstack/echo/v4"
 )
+
+var logger = log.Logger()
 
 type Service interface {
 	CreateRoutes(app *echo.Echo)
@@ -52,11 +55,12 @@ func (a *app) Start() {
 	go func() {
 		err := a.echo.Start(env.Port)
 		if err != nil && err != http.ErrServerClosed {
-			a.echo.Logger.Fatal("Shutting down the server...")
+			logger.Fatal(err.Error())
 		}
 	}()
 
 	<-ctx.Done()
+	logger.Info("Interrupt signal received. Shutting down")
 	for _, service := range services {
 		if closer, ok := service.(Closer); ok {
 			closer.Close()
@@ -66,6 +70,8 @@ func (a *app) Start() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := a.echo.Shutdown(ctx); err != nil {
-		a.echo.Logger.Fatal(err)
+		logger.Fatal(err.Error())
 	}
+
+	logger.Info("Server shut down")
 }

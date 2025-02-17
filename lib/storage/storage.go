@@ -30,9 +30,9 @@ type Factory func(option *option) Storage
 var providers = map[string]Factory{}
 
 func New(name string, opts ...Option) Storage {
-	tmp, _ := os.Getwd()
+	pwd, _ := os.Getwd()
 	opt := &option{
-		tmpDir: tmp + "/lib/storage/tmp",
+		tmpDir: pwd + "/lib/storage/tmp",
 	}
 
 	for _, option := range opts {

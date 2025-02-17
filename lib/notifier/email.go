@@ -2,14 +2,11 @@ package notifier
 
 import (
 	"app/env"
-	"app/lib/logger"
 	"embed"
 	"fmt"
 
 	gomail "gopkg.in/gomail.v2"
 )
-
-var zap = logger.Logger()
 
 //go:embed template
 var template embed.FS
@@ -18,12 +15,12 @@ type emailer struct {
 	mailer *gomail.Dialer
 }
 
-func createMailer(option *option) Notifier {
+func createMailer() Notifier {
 	mailer := gomail.NewDialer(
-		option.host,
-		option.port,
-		option.username,
-		option.password,
+		env.EmailHost,
+		env.EmailPort,
+		env.EmailUsername,
+		env.EmailPassword,
 	)
 
 	return &emailer{
@@ -47,7 +44,7 @@ func (e *emailer) Send(m Message) error {
 	}
 
 	if env.Dev {
-		zap.Info(msg)
+		logger.Info(msg)
 		return nil
 	}
 
