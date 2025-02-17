@@ -12,12 +12,14 @@ import (
 )
 
 type exampleService struct {
-	storage storage.Storage
+	storage  storage.Storage
+	notifier notifier.Notifier
 }
 
 func CreateService() *exampleService {
 	return &exampleService{
-		storage: storage.New(env.StorageDriver),
+		storage:  storage.New(env.StorageDriver),
+		notifier: notifier.New("email"),
 	}
 }
 
@@ -40,7 +42,7 @@ func (s *exampleService) validate(c echo.Context) error {
 }
 
 func (s *exampleService) sendEmail(c echo.Context) error {
-	err := notifier.New("email").Send(notifier.Send{
+	err := s.notifier.Send(notifier.Send{
 		Subject:  "Test Email",
 		Template: "example.html",
 	})
