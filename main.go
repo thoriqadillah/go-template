@@ -49,6 +49,7 @@ func main() {
 	echo.Binder = &customBinder{}
 
 	logger := log.Logger()
+	defer logger.Sync()
 
 	echo.Use(middleware.Recover())
 	echo.Use(echozap.ZapLogger(logger))

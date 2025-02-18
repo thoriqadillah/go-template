@@ -7,10 +7,13 @@ import (
 
 var logger = log.Logger()
 
+type Data map[string]interface{}
+
 type Message struct {
 	Subject  string
 	Text     string
 	Template string
+	Data     Data
 	From     string
 	To       []string
 	Bcc      []string

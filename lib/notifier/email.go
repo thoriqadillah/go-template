@@ -2,14 +2,17 @@ package notifier
 
 import (
 	"app/env"
+	"bytes"
 	"embed"
-	"fmt"
+	"log"
+	"text/template"
 
 	gomail "gopkg.in/gomail.v2"
 )
 
 //go:embed template
-var template embed.FS
+var templateFs embed.FS
+var templates *template.Template
 
 type emailer struct {
 	mailer *gomail.Dialer
@@ -35,12 +38,13 @@ func (e *emailer) Send(m Message) error {
 
 	if m.Template != "" {
 		mimetype = "text/html"
-		bytes, err := template.ReadFile(fmt.Sprintf("template/%s", m.Template))
-		if err != nil {
+
+		var buff bytes.Buffer
+		if err := templates.ExecuteTemplate(&buff, m.Template, m.Data); err != nil {
 			return err
 		}
 
-		msg = string(bytes)
+		msg = buff.String()
 	}
 
 	if env.Dev {
@@ -60,5 +64,12 @@ func (e *emailer) Send(m Message) error {
 }
 
 func init() {
+	templ, err := template.ParseFS(templateFs, "template/*.html")
+	if err != nil {
+		log.Fatalf("Could not parse template fs: %v", err)
+		return
+	}
+
+	templates = templ
 	register("email", createMailer)
 }
