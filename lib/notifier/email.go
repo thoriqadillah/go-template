@@ -20,10 +20,10 @@ type emailer struct {
 
 func createMailer() Notifier {
 	mailer := gomail.NewDialer(
-		env.EmailHost,
-		env.EmailPort,
-		env.EmailUsername,
-		env.EmailPassword,
+		env.EMAIL_HOST,
+		env.EMAIL_PORT,
+		env.EMAIL_USERNAME,
+		env.EMAIL_PASSWORD,
 	)
 
 	return &emailer{
@@ -47,7 +47,7 @@ func (e *emailer) Send(m Message) error {
 		msg = buff.String()
 	}
 
-	if env.Dev {
+	if env.DEV {
 		logger.Info(msg)
 		return nil
 	}

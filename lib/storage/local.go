@@ -40,7 +40,7 @@ func (l *local) Upload(filename string, src io.Reader) (string, error) {
 	}
 
 	// TODO: return the id of the file instead
-	path := fmt.Sprintf("http://localhost%s/storage/%s", env.Port, filename)
+	path := fmt.Sprintf("http://localhost%s/storage/%s", env.PORT, filename)
 	return path, nil
 }
 

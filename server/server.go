@@ -53,7 +53,7 @@ func (a *app) Start() {
 	defer stop()
 
 	go func() {
-		err := a.echo.Start(env.Port)
+		err := a.echo.Start(env.PORT)
 		if err != nil && err != http.ErrServerClosed {
 			logger.Fatal(err.Error())
 		}

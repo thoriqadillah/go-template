@@ -39,7 +39,7 @@ func (b *customBinder) Bind(i interface{}, c echo.Context) error {
 func main() {
 	godotenv.Load()
 
-	close, err := db.Connect(env.DbUrl)
+	close, err := db.Connect(env.DB_URL)
 	if err != nil {
 		panic(err)
 	}
@@ -56,7 +56,7 @@ func main() {
 	echo.Use(middleware.Gzip())
 	echo.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOriginFunc: func(origin string) (bool, error) {
-			re := regexp.MustCompile(env.CorsOrigin)
+			re := regexp.MustCompile(env.CORS_ORIGIN)
 			return re.MatchString(origin), nil
 		},
 	}))

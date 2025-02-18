@@ -18,7 +18,7 @@ type exampleService struct {
 
 func CreateService() *exampleService {
 	return &exampleService{
-		storage: storage.New(env.StorageDriver),
+		storage: storage.New(env.STORAGE_DRIVER),
 		email:   notifier.New("email"),
 	}
 }
