@@ -18,6 +18,10 @@ func Db() *bob.DB {
 	return db
 }
 
+func Sql() *sql.DB {
+	return sqldb
+}
+
 func Connect(connstr string) (closer func(), err error) {
 	ctx := context.Background()
 
@@ -31,8 +35,10 @@ func Connect(connstr string) (closer func(), err error) {
 	bob := bob.NewDB(sqldb)
 
 	db = &bob
-	return func() {
+	close := func() {
 		pool.Close()
 		db.Close()
-	}, nil
+	}
+
+	return close, sqldb.Ping()
 }

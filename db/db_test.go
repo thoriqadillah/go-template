@@ -50,8 +50,8 @@ func TestMain(m *testing.M) {
 
 	// Wait for the Postgres to be ready
 	if err := pool.Retry(func() error {
-		Connect(pgUrl)
-		return sqldb.Ping()
+		_, err := Connect(pgUrl)
+		return err
 	}); err != nil {
 		panic("Could not connect to postgres: " + err.Error())
 	}
