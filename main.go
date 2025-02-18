@@ -1,6 +1,7 @@
 package main
 
 import (
+	"app/db"
 	"app/env"
 	"app/lib/log"
 	"app/lib/validator"
@@ -37,6 +38,13 @@ func (b *customBinder) Bind(i interface{}, c echo.Context) error {
 
 func main() {
 	godotenv.Load()
+
+	close, err := db.Connect(env.DbUrl)
+	if err != nil {
+		panic(err)
+	}
+	defer close()
+
 	echo := echo.New()
 	echo.Binder = &customBinder{}
 
