@@ -30,8 +30,6 @@ func TestMain(m *testing.M) {
 		Env: []string{
 			"POSTGRES_HOST_AUTH_METHOD=trust",
 			"POSTGRES_DB=apptest",
-			"POSTGRES_USER=postgres",
-			"POSTGRES_PASSWORD=",
 			"listen_addresses = '*'",
 		},
 	}, func(config *docker.HostConfig) {
