@@ -67,10 +67,10 @@ func TestMain(m *testing.M) {
 
 func TestMigration(t *testing.T) {
 	err := goose.SetDialect("postgres")
-	assert.Equal(t, nil, err)
+	assert.NoError(t, err)
 
 	pwd, _ := os.Getwd()
 
 	err = goose.Up(sqldb, pwd+"/migration")
-	assert.Equal(t, nil, err)
+	assert.NoError(t, err)
 }
