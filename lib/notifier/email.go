@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"embed"
+	"fmt"
 	"log"
 	"text/template"
 
@@ -88,8 +89,13 @@ func (e *emailWorker) send(m Message) error {
 		return nil
 	}
 
+	from := m.From
+	if from == "" {
+		from = fmt.Sprintf("%s <%s>", env.APP_NAME, env.EMAIL_SENDER)
+	}
+
 	message := gomail.NewMessage()
-	message.SetHeader("From", m.From)
+	message.SetHeader("From", from)
 	message.SetHeader("To", m.To...)
 	message.SetHeader("Subject", m.Subject)
 	message.SetHeader("Bcc", m.Bcc...)
