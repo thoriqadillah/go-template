@@ -3,6 +3,9 @@ package notifier
 import (
 	"app/lib/log"
 	"fmt"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/riverqueue/river"
 )
 
 var logger = log.Logger()
@@ -20,7 +23,19 @@ type Message struct {
 	Cc       []string
 }
 
-type Factory func() Notifier
+type option struct {
+	river *river.Client[pgx.Tx]
+}
+
+type Option func(o *option)
+
+type Factory func(o *option) Notifier
+
+func WithQueue(river *river.Client[pgx.Tx]) Option {
+	return func(o *option) {
+		o.river = river
+	}
+}
 
 var providers = map[string]Factory{}
 
@@ -32,12 +47,17 @@ type Notifier interface {
 	Send(s Message) error
 }
 
-func New(name string) Notifier {
+func New(name string, options ...Option) Notifier {
+	opt := &option{}
+	for _, option := range options {
+		option(opt)
+	}
+
 	provider, ok := providers[name]
 	if !ok {
 		logger.Fatal(fmt.Sprintf("Notifier provider %s not found", name))
 		return nil
 	}
 
-	return provider()
+	return provider(opt)
 }

@@ -20,7 +20,7 @@ type exampleService struct {
 func CreateService(app *server.App) server.Service {
 	return &exampleService{
 		storage: storage.New(env.STORAGE_DRIVER),
-		email:   notifier.New("email"),
+		email:   notifier.New("email", notifier.WithQueue(app.Queue)),
 	}
 }
 

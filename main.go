@@ -5,6 +5,7 @@ import (
 	"app/env"
 	"app/lib/log"
 	"app/lib/validator"
+	"app/queue"
 	"app/server"
 	_ "app/server/module"
 	"context"
@@ -47,11 +48,22 @@ func main() {
 
 	godotenv.Load()
 
-	close, err := db.Connect(ctx, env.DB_URL)
+	db, pool, err := db.Connect(ctx, env.DB_URL)
 	if err != nil {
 		panic(err)
 	}
-	defer close()
+
+	defer db.Close()
+	defer pool.Close()
+
+	river, err := queue.Start(ctx, pool)
+	if err != nil {
+		panic(err)
+	}
+
+	if err := river.Start(ctx); err != nil {
+		panic(err)
+	}
 
 	echo := echo.New()
 	echo.Binder = &customBinder{}
@@ -69,6 +81,6 @@ func main() {
 		},
 	}))
 
-	app := server.Create(echo)
+	app := server.Create(echo, db, river)
 	app.Start(ctx)
 }

@@ -20,23 +20,18 @@ func Db() *bob.DB {
 	return db
 }
 
-func Connect(ctx context.Context, connstr string) (close func(), err error) {
+func Connect(ctx context.Context, connstr string) (*bob.DB, *pgxpool.Pool, error) {
 	pool, err := pgxpool.New(ctx, connstr)
 	if err != nil {
-		log.Fatal(err.Error())
-		return nil, err
+		return nil, nil, err
 	}
 
 	sqldb = stdlib.OpenDBFromPool(pool)
 	bob := bob.NewDB(sqldb)
 
 	db = &bob
-	close = func() {
-		pool.Close()
-		db.Close()
-	}
 
-	return close, sqldb.Ping()
+	return db, pool, sqldb.Ping()
 }
 
 func SetupTest(ctx context.Context) (purge func()) {
@@ -77,7 +72,7 @@ func SetupTest(ctx context.Context) (purge func()) {
 
 	// Wait for the Postgres to be ready
 	err = pool.Retry(func() error {
-		_, err := Connect(ctx, pgUrl)
+		_, _, err := Connect(ctx, pgUrl)
 		return err
 	})
 

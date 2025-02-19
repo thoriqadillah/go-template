@@ -13,6 +13,8 @@ require (
 	github.com/labstack/echo/v4 v4.13.3
 	github.com/ory/dockertest/v3 v3.11.0
 	github.com/pressly/goose/v3 v3.24.1
+	github.com/riverqueue/river v0.17.0
+	github.com/riverqueue/river/riverdriver/riverpgxv5 v0.17.0
 	github.com/stephenafamo/bob v0.30.0
 	github.com/stretchr/testify v1.10.0
 	go.uber.org/zap v1.27.0
@@ -51,15 +53,22 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/qdm12/reprint v0.0.0-20200326205758-722754a53494 // indirect
-	github.com/rogpeppe/go-internal v1.12.0 // indirect
+	github.com/riverqueue/river/riverdriver v0.17.0 // indirect
+	github.com/riverqueue/river/rivershared v0.17.0 // indirect
+	github.com/riverqueue/river/rivertype v0.17.0 // indirect
 	github.com/sethvargo/go-retry v0.3.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/stephenafamo/scan v0.6.1 // indirect
+	github.com/tidwall/gjson v1.18.0 // indirect
+	github.com/tidwall/match v1.1.1 // indirect
+	github.com/tidwall/pretty v1.2.1 // indirect
+	github.com/tidwall/sjson v1.2.5 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
+	go.uber.org/goleak v1.3.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.32.0 // indirect
 	golang.org/x/net v0.34.0 // indirect

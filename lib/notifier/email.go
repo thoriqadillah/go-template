@@ -3,22 +3,54 @@ package notifier
 import (
 	"app/env"
 	"bytes"
+	"context"
 	"embed"
 	"log"
 	"text/template"
 
-	gomail "gopkg.in/gomail.v2"
+	"github.com/jackc/pgx/v5"
+	"github.com/riverqueue/river"
+	"gopkg.in/gomail.v2"
 )
 
 //go:embed template
 var templateFs embed.FS
 var templates *template.Template
 
+type emailArg struct {
+	Message
+}
+
+func (emailArg) Kind() string {
+	return "email"
+}
+
 type emailer struct {
+	river *river.Client[pgx.Tx]
+}
+
+func createMailer(opt *option) Notifier {
+	if opt.river == nil {
+		panic("Please provde queue when creating emailer")
+	}
+
+	return &emailer{river: opt.river}
+}
+
+func (e *emailer) Send(m Message) error {
+	_, err := e.river.Insert(context.Background(), emailArg{m}, &river.InsertOpts{
+		MaxAttempts: 3,
+	})
+
+	return err
+}
+
+type emailWorker struct {
+	river.WorkerDefaults[emailArg]
 	mailer *gomail.Dialer
 }
 
-func createMailer() Notifier {
+func CreateEmailWorker() *emailWorker {
 	mailer := gomail.NewDialer(
 		env.EMAIL_HOST,
 		env.EMAIL_PORT,
@@ -26,13 +58,17 @@ func createMailer() Notifier {
 		env.EMAIL_PASSWORD,
 	)
 
-	return &emailer{
+	return &emailWorker{
 		mailer: mailer,
 	}
 }
 
-func (e *emailer) Send(m Message) error {
-	// TODO: send email with background job
+func (w *emailWorker) Work(ctx context.Context, job *river.Job[emailArg]) error {
+	arg := job.Args
+	return w.send(arg.Message)
+}
+
+func (e *emailWorker) send(m Message) error {
 	msg := m.Text
 	mimetype := "text/plain"
 
@@ -61,6 +97,10 @@ func (e *emailer) Send(m Message) error {
 	message.SetBody(mimetype, msg)
 
 	return e.mailer.DialAndSend(message)
+}
+
+func (e *emailWorker) CreateWorker(workers *river.Workers) {
+	river.AddWorker(workers, e)
 }
 
 func init() {
