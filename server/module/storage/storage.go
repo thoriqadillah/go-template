@@ -2,6 +2,7 @@ package storage
 
 import (
 	"app/lib/storage"
+	"app/server"
 	"mime"
 	"net/http"
 	"path/filepath"
@@ -13,7 +14,7 @@ type storageService struct {
 	storage storage.Storage
 }
 
-func CreateService() *storageService {
+func CreateService(app *server.App) server.Service {
 	return &storageService{
 		storage: storage.New("local"),
 	}

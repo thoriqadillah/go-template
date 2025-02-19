@@ -6,6 +6,7 @@ import (
 	"app/lib/log"
 	"app/lib/validator"
 	"app/server"
+	_ "app/server/module"
 	"context"
 	"net/http"
 	"os"

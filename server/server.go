@@ -24,29 +24,40 @@ type Closer interface {
 	Close()
 }
 
-var services = make([]Service, 0)
-
-func Register(s ...Service) {
-	services = append(services, s...)
+type App struct {
+	echo     *echo.Echo
+	services []Service
 }
 
-type app struct {
-	echo *echo.Echo
+type Factory func(app *App) Service
+
+var factories = make([]Factory, 0)
+
+func Register(f ...Factory) {
+	factories = append(factories, f...)
 }
 
-func Create(echo *echo.Echo) *app {
-	for _, service := range services {
+func Create(echo *echo.Echo) *App {
+	app := &App{
+		echo:     echo,
+		services: make([]Service, 0),
+	}
+
+	for _, factory := range factories {
+		service := factory(app)
 		service.CreateRoutes(echo)
 
 		if initter, ok := service.(Initter); ok {
 			initter.Init()
 		}
+
+		app.services = append(app.services, service)
 	}
 
-	return &app{echo}
+	return app
 }
 
-func (a *app) Start(ctx context.Context) {
+func (a *App) Start(ctx context.Context) {
 	go func() {
 		err := a.echo.Start(env.PORT)
 		if err != nil && err != http.ErrServerClosed {
@@ -56,7 +67,7 @@ func (a *app) Start(ctx context.Context) {
 
 	<-ctx.Done()
 	logger.Info("Interrupt signal received. Shutting down")
-	for _, service := range services {
+	for _, service := range a.services {
 		if closer, ok := service.(Closer); ok {
 			closer.Close()
 		}

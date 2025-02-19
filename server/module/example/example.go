@@ -4,6 +4,7 @@ import (
 	"app/env"
 	"app/lib/notifier"
 	"app/lib/storage"
+	"app/server"
 	"net/http"
 	"path/filepath"
 
@@ -16,7 +17,7 @@ type exampleService struct {
 	email   notifier.Notifier
 }
 
-func CreateService() *exampleService {
+func CreateService(app *server.App) server.Service {
 	return &exampleService{
 		storage: storage.New(env.STORAGE_DRIVER),
 		email:   notifier.New("email"),
