@@ -5,8 +5,6 @@ import (
 	"app/lib/log"
 	"context"
 	"net/http"
-	"os"
-	"os/signal"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -48,10 +46,7 @@ func Create(echo *echo.Echo) *app {
 	return &app{echo}
 }
 
-func (a *app) Start() {
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer stop()
-
+func (a *app) Start(ctx context.Context) {
 	go func() {
 		err := a.echo.Start(env.PORT)
 		if err != nil && err != http.ErrServerClosed {

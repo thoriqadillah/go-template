@@ -20,9 +20,7 @@ func Db() *bob.DB {
 	return db
 }
 
-func Connect(connstr string) (close func(), err error) {
-	ctx := context.Background()
-
+func Connect(ctx context.Context, connstr string) (close func(), err error) {
 	pool, err := pgxpool.New(ctx, connstr)
 	if err != nil {
 		log.Fatal(err.Error())
@@ -41,7 +39,7 @@ func Connect(connstr string) (close func(), err error) {
 	return close, sqldb.Ping()
 }
 
-func SetupTest() (purge func()) {
+func SetupTest(ctx context.Context) (purge func()) {
 	pool, err := dockertest.NewPool("")
 	if err != nil {
 		log.Fatalf("Could not construct pool: %v", err)
@@ -79,7 +77,7 @@ func SetupTest() (purge func()) {
 
 	// Wait for the Postgres to be ready
 	err = pool.Retry(func() error {
-		_, err := Connect(pgUrl)
+		_, err := Connect(ctx, pgUrl)
 		return err
 	})
 

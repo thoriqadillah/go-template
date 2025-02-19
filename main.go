@@ -6,8 +6,12 @@ import (
 	"app/lib/log"
 	"app/lib/validator"
 	"app/server"
+	"context"
 	"net/http"
+	"os"
+	"os/signal"
 	"regexp"
+	"syscall"
 
 	"github.com/brpaz/echozap"
 	"github.com/joho/godotenv"
@@ -37,9 +41,12 @@ func (b *customBinder) Bind(i interface{}, c echo.Context) error {
 }
 
 func main() {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGABRT, syscall.SIGTERM)
+	defer stop()
+
 	godotenv.Load()
 
-	close, err := db.Connect(env.DB_URL)
+	close, err := db.Connect(ctx, env.DB_URL)
 	if err != nil {
 		panic(err)
 	}
@@ -62,5 +69,5 @@ func main() {
 	}))
 
 	app := server.Create(echo)
-	app.Start()
+	app.Start(ctx)
 }

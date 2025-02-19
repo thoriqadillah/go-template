@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"os"
 	"testing"
 
@@ -8,8 +9,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var ctx = context.Background()
+
 func TestMain(m *testing.M) {
-	purge := SetupTest()
+	purge := SetupTest(ctx)
 	defer purge()
 
 	m.Run()
