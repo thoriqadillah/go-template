@@ -35,7 +35,7 @@ func (s *storageService) serve(c echo.Context) error {
 }
 
 func (s *storageService) CreateRoutes(app *echo.Echo) {
-	router := app.Group("storage")
+	router := app.Group("/storage")
 
 	router.GET("/:filename", s.serve)
 }

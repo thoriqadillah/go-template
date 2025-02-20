@@ -79,6 +79,7 @@ func main() {
 			re := regexp.MustCompile(env.CORS_ORIGIN)
 			return re.MatchString(origin), nil
 		},
+		AllowCredentials: true,
 	}))
 
 	app := server.Create(echo, db, river)

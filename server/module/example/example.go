@@ -2,6 +2,7 @@ package example
 
 import (
 	"app/env"
+	"app/lib/auth"
 	"app/lib/notifier"
 	"app/lib/storage"
 	"app/server"
@@ -83,11 +84,23 @@ func (s *exampleService) uploadFile(c echo.Context) error {
 	return c.String(http.StatusOK, url)
 }
 
-func (s *exampleService) CreateRoutes(app *echo.Echo) {
-	router := app.Group("example")
+func (s *exampleService) restricted(c echo.Context) error {
+	user := auth.User(c)
+	return c.JSON(http.StatusOK, echo.Map{
+		"id": user.UserId,
+	})
+}
 
-	router.GET("/", s.example)
-	router.GET("/email", s.sendEmail)
-	router.POST("/upload", s.uploadFile)
-	router.POST("/validate", s.validate)
+func (s *exampleService) CreateRoutes(app *echo.Echo) {
+	r := app.Group("/example")
+
+	r.GET("/", s.example)
+	r.GET("/email", s.sendEmail)
+	r.POST("/upload", s.uploadFile)
+	r.POST("/validate", s.validate)
+
+	restricted := r.Group("/restricted")
+
+	restricted.Use(auth.Middleware())
+	restricted.GET("/", s.restricted)
 }

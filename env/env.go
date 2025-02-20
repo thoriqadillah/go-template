@@ -15,6 +15,7 @@ var (
 	DEV            = env("ENV").String("development") == "development"
 	PROD           = env("ENV").String("production") == "production"
 	CORS_ORIGIN    = env("CORS_ORIGIN").String("(.*?)")
+	JWT_SECRET     = env("JWT_SECRET").String("secret")
 	PORT           = env("PORT").String(":8080")
 	DB_URL         = env("DB_URL").String("postgresql://postgres@localhost:5432/app?sslmode=disable")
 	EMAIL_SENDER   = env("EMAIL_SENDER").String("hallo@app.com")
