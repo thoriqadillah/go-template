@@ -57,6 +57,7 @@ func (s *accountService) signup(c echo.Context) error {
 		return err
 	}
 
+	// TODO: generate OTP
 	err = s.emailer.Send(notifier.Message{
 		To:       []string{user.Email},
 		Subject:  "Email Verification",
@@ -80,7 +81,7 @@ func (s *accountService) signup(c echo.Context) error {
 	})
 }
 
-func (s *accountService) getUser(c echo.Context) error {
+func (s *accountService) user(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	claims := auth.User(c)
@@ -107,12 +108,69 @@ func (s *accountService) auth(c echo.Context) error {
 	})
 }
 
+func (s *accountService) logout(c echo.Context) error {
+	// TODO
+	return c.NoContent(http.StatusOK)
+}
+
+func (s *accountService) refreshToken(c echo.Context) error {
+	// TODO
+	return c.NoContent(http.StatusOK)
+}
+
+func (s *accountService) resendVerification(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	claims := auth.User(c)
+	user, err := s.store.Get(ctx, claims.UserId)
+	if err != nil {
+		return err
+	}
+
+	// TODO: generate OTP
+	err = s.emailer.Send(notifier.Message{
+		To:       []string{user.Email},
+		Subject:  "Email Verification",
+		Template: "verify.html",
+		Data:     notifier.Data{
+			// TODO
+		},
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return c.NoContent(http.StatusOK)
+}
+
+func (s *accountService) verifyUser(c echo.Context) error {
+	// TODO
+	return c.NoContent(http.StatusOK)
+}
+
+func (s *accountService) resetPassword(c echo.Context) error {
+	// TODO
+	return c.NoContent(http.StatusOK)
+}
+
+func (s *accountService) changePassword(c echo.Context) error {
+	// TODO
+	return c.NoContent(http.StatusOK)
+}
+
 func (s *accountService) CreateRoutes(echo *echo.Echo) {
-	r := echo.Group("/account")
+	a := echo.Group("/auth")
+	a.POST("/login", s.login)
+	a.POST("/signup", s.signup)
 
-	r.POST("/login", s.login)
-	r.POST("/signup", s.signup)
-
-	r.GET("/", s.auth, auth.Middleware())
-	r.GET("/user", s.getUser, auth.Middleware())
+	acc := echo.Group("/account", auth.Middleware())
+	acc.GET("/", s.auth)
+	acc.GET("/user", s.user)
+	acc.POST("/logout", s.logout)
+	acc.POST("/refresh-token", s.refreshToken)
+	acc.POST("/reset-password", s.resetPassword)
+	acc.POST("/change-password", s.changePassword)
+	acc.POST("/verify", s.verifyUser)
+	acc.POST("/resend-verification", s.resendVerification)
 }
