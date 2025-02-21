@@ -12,10 +12,8 @@ import (
 	"github.com/gofrs/uuid/v5"
 	"github.com/labstack/echo/v4"
 	"github.com/stephenafamo/bob"
-	"github.com/stephenafamo/bob/dialect/psql"
 	"github.com/stephenafamo/bob/dialect/psql/dialect"
 	"github.com/stephenafamo/bob/dialect/psql/im"
-	"github.com/stephenafamo/bob/dialect/psql/sm"
 	"github.com/stephenafamo/bob/dialect/psql/um"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -24,6 +22,7 @@ var logger = log.Logger()
 
 type Store interface {
 	Get(ctx context.Context, id string) (*models.User, error)
+	GetByEmail(ctx context.Context, email string) (*models.User, error)
 	Login(ctx context.Context, email string, password string) (string, error)
 	Signup(ctx context.Context, data createUser) (user *models.User, err error)
 	Update(ctx context.Context, id string, data updateUser) error
@@ -58,13 +57,14 @@ func (s *userStore) Get(ctx context.Context, id string) (*models.User, error) {
 	).One(ctx, s.db)
 }
 
-func (s *userStore) Login(ctx context.Context, email string, password string) (string, error) {
-	user, err := models.Users.Query(
-		sm.Where(
-			psql.Quote("email").EQ(psql.Arg(email)),
-		),
+func (s *userStore) GetByEmail(ctx context.Context, email string) (*models.User, error) {
+	return models.Users.Query(
+		models.SelectWhere.Users.Email.EQ(email),
 	).One(ctx, s.db)
+}
 
+func (s *userStore) Login(ctx context.Context, email string, password string) (string, error) {
+	user, err := s.GetByEmail(ctx, email)
 	if err != nil {
 		return "", err
 	}
@@ -77,9 +77,15 @@ func (s *userStore) Login(ctx context.Context, email string, password string) (s
 }
 
 func (s *userStore) Signup(ctx context.Context, data createUser) (*models.User, error) {
-	password, err := s.hash(data.Password)
-	if err != nil {
-		return nil, err
+	// to accomodate oauth signup
+	password := new(string)
+	if data.Password != nil {
+		pass, err := s.hash(*data.Password)
+		if err != nil {
+			return nil, err
+		}
+
+		password = &pass
 	}
 
 	v7, err := uuid.NewV7()
@@ -101,11 +107,12 @@ func (s *userStore) Signup(ctx context.Context, data createUser) (*models.User, 
 
 	query := models.Users.Insert(
 		&models.UserSetter{
-			ID:       omit.From(v7),
-			Name:     omitnull.From(data.Name),
-			Email:    omit.From(data.Email),
-			Password: omitnull.From(password),
-			Source:   omitnull.From(data.Source),
+			ID:         omit.From(v7),
+			Name:       omitnull.From(data.Name),
+			Email:      omit.From(data.Email),
+			Password:   omitnull.FromPtr(password),
+			Source:     omitnull.From(data.Source),
+			VerifiedAt: omitnull.FromOmit(omit.FromCond(time.Now(), data.Source == "google")),
 		},
 		im.Returning("*"),
 	)
@@ -134,7 +141,7 @@ func (s *userStore) Update(ctx context.Context, id string, data updateUser) erro
 		q = append(q, um.SetCol("password").ToArg(hash))
 	}
 
-	if !data.VerifiedAt.Equal(time.Time{}) {
+	if !data.VerifiedAt.IsZero() {
 		q = append(q, um.SetCol("verified_at").ToArg(data.VerifiedAt))
 	}
 

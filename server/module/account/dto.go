@@ -6,10 +6,10 @@ import (
 )
 
 type createUser struct {
-	Name     string `json:"name" validate:"required"`
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required,gte=6,lte=16"`
-	Source   string `json:"source" validate:"required,oneof='email google"`
+	Name     string  `json:"name" validate:"required"`
+	Email    string  `json:"email" validate:"required,email"`
+	Password *string `json:"password" validate:"required,gte=6,lte=16"`
+	Source   string  `json:"source" validate:"required,oneof='email google"`
 }
 
 func (u *createUser) Validate() error {
