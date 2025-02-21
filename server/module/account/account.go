@@ -108,6 +108,16 @@ func (s *accountService) signup(c echo.Context) error {
 	})
 }
 
+func (s *accountService) loginOauth(c echo.Context) error {
+	// TODO
+	return c.NoContent(http.StatusOK)
+}
+
+func (s *accountService) signupOauth(c echo.Context) error {
+	// TODO
+	return c.NoContent(http.StatusOK)
+}
+
 func (s *accountService) user(c echo.Context) error {
 	ctx := c.Request().Context()
 
@@ -186,6 +196,10 @@ func (s *accountService) verifyUser(c echo.Context) error {
 		return err
 	}
 
+	if err := s.cache.Del(ctx, user.Email).Err(); err != nil {
+		return err
+	}
+
 	return c.NoContent(http.StatusOK)
 }
 
@@ -200,17 +214,21 @@ func (s *accountService) changePassword(c echo.Context) error {
 }
 
 func (s *accountService) CreateRoutes(echo *echo.Echo) {
+	oa := echo.Group("/oauth")
+	oa.POST("/login", s.loginOauth)
+	oa.POST("/signup", s.signupOauth)
+
 	au := echo.Group("/auth")
 	au.POST("/login", s.login)
 	au.POST("/signup", s.signup)
 	au.POST("/reset-password", s.resetPassword)
-	au.POST("/refresh-token", s.refreshToken)
-	au.POST("/change-password", s.changePassword)
+	au.GET("/refresh-token", s.refreshToken)
+	au.PATCH("/change-password", s.changePassword)
 
 	acc := echo.Group("/account", auth.AuthenticatedMw)
 	acc.GET("/", s.auth)
 	acc.GET("/user", s.user)
 	acc.POST("/logout", s.logout)
-	acc.POST("/verify", s.verifyUser)
+	acc.PATCH("/verify", s.verifyUser)
 	acc.POST("/send-verification", s.sendVerification)
 }
