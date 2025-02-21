@@ -18,6 +18,8 @@ import (
 var templateFs embed.FS
 var templates *template.Template
 
+const EmailNotifier NotifierName = "email"
+
 type emailArg struct {
 	Message
 }
@@ -39,6 +41,10 @@ func createMailer(opt *option) Notifier {
 }
 
 func (e *emailer) Send(m Message) error {
+	if m.From == "" {
+		m.From = env.EMAIL_SENDER
+	}
+
 	_, err := e.river.Insert(context.Background(), emailArg{m}, &river.InsertOpts{
 		MaxAttempts: 3,
 	})
@@ -117,5 +123,5 @@ func init() {
 	}
 
 	templates = templ
-	register("email", createMailer)
+	register(EmailNotifier, createMailer)
 }

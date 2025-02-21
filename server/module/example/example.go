@@ -21,7 +21,7 @@ type exampleService struct {
 func CreateService(app *server.App) server.Service {
 	return &exampleService{
 		storage: storage.New(env.STORAGE_DRIVER),
-		email:   notifier.New("email", notifier.WithQueue(app.Queue)),
+		email:   notifier.New(notifier.EmailNotifier, notifier.WithQueue(app.Queue)),
 	}
 }
 

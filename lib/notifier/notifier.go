@@ -10,6 +10,8 @@ import (
 
 var logger = log.Logger()
 
+type NotifierName string
+
 type Data map[string]interface{}
 
 type Message struct {
@@ -37,9 +39,9 @@ func WithQueue(river *river.Client[pgx.Tx]) Option {
 	}
 }
 
-var providers = map[string]Factory{}
+var providers = map[NotifierName]Factory{}
 
-func register(name string, impl Factory) {
+func register(name NotifierName, impl Factory) {
 	providers[name] = impl
 }
 
@@ -47,7 +49,7 @@ type Notifier interface {
 	Send(s Message) error
 }
 
-func New(name string, options ...Option) Notifier {
+func New(name NotifierName, options ...Option) Notifier {
 	opt := &option{}
 	for _, option := range options {
 		option(opt)

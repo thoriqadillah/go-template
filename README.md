@@ -2,7 +2,8 @@
 ## Requirements
 -  Go 
 -  [Goose](https://github.com/pressly/goose)
--  [River Queue](https://riverqueue.com/docs#running-migrations)
+-  [River](https://riverqueue.com/docs#running-migrations)
+-  [Bob](https://bob.stephenafamo.com/docs)
 
 ## Configuration
 - Change your app name in the env
@@ -13,6 +14,11 @@ goose postgres "postgresql://postgres@localhost:5432/app?sslmode=disable" up
 ```
 ```bash
 river migrate-up --database-url "postgresql://postgres@localhost:5432/app?sslmode=disable"
+```
+- Generate the model from database
+```bash
+cd db 
+go run github.com/stephenafamo/bob/gen/bobgen-psql@latest -c ./bobgen.yaml
 ```
 
 ## Logging
