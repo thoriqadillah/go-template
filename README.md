@@ -10,10 +10,7 @@
 - Change your db name in the docker compose
 - Migrate the database
 ```bash
-goose postgres "postgresql://postgres@localhost:5432/app?sslmode=disable" up  
-```
-```bash
-river migrate-up --database-url "postgresql://postgres@localhost:5432/app?sslmode=disable"
+goose -dir="./db/migration" postgres "postgresql://postgres@localhost:5432/app?sslmode=disable" up  
 ```
 - Generate the model from database
 ```bash

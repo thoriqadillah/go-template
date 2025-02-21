@@ -4,27 +4,64 @@ import (
 	"app/lib/auth"
 	"app/lib/notifier"
 	"app/server"
+	"context"
+	"crypto/rand"
+	"math/big"
 	"net/http"
+	"time"
 
 	"github.com/labstack/echo/v4"
+	"github.com/redis/go-redis/v9"
 )
 
 type accountService struct {
 	store   Store
+	cache   *redis.Client
 	emailer notifier.Notifier
 }
 
 func CreateService(app *server.App) server.Service {
 	return &accountService{
-		store:   NewStore(app.Db),
-		emailer: notifier.New(notifier.EmailNotifier, notifier.WithQueue(app.Queue)),
+		store: NewStore(app.BobDB),
+		cache: app.Redis,
+		emailer: notifier.New(notifier.EmailNotifier,
+			notifier.WithRiverQueue(app.RiverQueue),
+		),
 	}
+}
+
+func (s *accountService) generateOTP() (int, error) {
+	n, err := rand.Int(rand.Reader, big.NewInt(900000))
+	if err != nil {
+		return 0, err
+	}
+	return int(n.Int64()) + 100000, nil
+}
+
+func (s *accountService) sendVerificationEmail(ctx context.Context, email string) error {
+	otp, err := s.generateOTP()
+	if err != nil {
+		return err
+	}
+
+	if err := s.cache.Set(ctx, email, otp, time.Minute*30).Err(); err != nil {
+		return err
+	}
+
+	return s.emailer.Send(notifier.Message{
+		To:       []string{email},
+		Subject:  "Email Verification",
+		Template: "verify.html",
+		Data: notifier.Data{
+			"otp": otp,
+		},
+	})
 }
 
 func (s *accountService) login(c echo.Context) error {
 	ctx := c.Request().Context()
 
-	var user loginUser
+	var user login
 	if err := c.Bind(&user); err != nil {
 		return err
 	}
@@ -57,17 +94,7 @@ func (s *accountService) signup(c echo.Context) error {
 		return err
 	}
 
-	// TODO: generate OTP
-	err = s.emailer.Send(notifier.Message{
-		To:       []string{user.Email},
-		Subject:  "Email Verification",
-		Template: "verify.html",
-		Data:     notifier.Data{
-			// TODO
-		},
-	})
-
-	if err != nil {
+	if err = s.sendVerificationEmail(ctx, user.Email); err != nil {
 		return err
 	}
 
@@ -118,7 +145,7 @@ func (s *accountService) refreshToken(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
-func (s *accountService) resendVerification(c echo.Context) error {
+func (s *accountService) sendVerification(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	claims := auth.User(c)
@@ -127,17 +154,7 @@ func (s *accountService) resendVerification(c echo.Context) error {
 		return err
 	}
 
-	// TODO: generate OTP
-	err = s.emailer.Send(notifier.Message{
-		To:       []string{user.Email},
-		Subject:  "Email Verification",
-		Template: "verify.html",
-		Data:     notifier.Data{
-			// TODO
-		},
-	})
-
-	if err != nil {
+	if err = s.sendVerificationEmail(ctx, user.Email); err != nil {
 		return err
 	}
 
@@ -145,7 +162,30 @@ func (s *accountService) resendVerification(c echo.Context) error {
 }
 
 func (s *accountService) verifyUser(c echo.Context) error {
-	// TODO
+	ctx := c.Request().Context()
+
+	otpquery := c.QueryParam("otp")
+
+	claims := auth.User(c)
+	user, err := s.store.Get(ctx, claims.UserId)
+	if err != nil {
+		return err
+	}
+
+	otp, err := s.cache.Get(ctx, user.Email).Result()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid or expired OTP")
+	}
+
+	if otpquery != otp {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid or expired OTP")
+	}
+
+	data := updateUser{VerifiedAt: time.Now()}
+	if err := s.store.Update(ctx, claims.UserId, data); err != nil {
+		return err
+	}
+
 	return c.NoContent(http.StatusOK)
 }
 
@@ -160,17 +200,17 @@ func (s *accountService) changePassword(c echo.Context) error {
 }
 
 func (s *accountService) CreateRoutes(echo *echo.Echo) {
-	a := echo.Group("/auth")
-	a.POST("/login", s.login)
-	a.POST("/signup", s.signup)
+	au := echo.Group("/auth")
+	au.POST("/login", s.login)
+	au.POST("/signup", s.signup)
+	au.POST("/reset-password", s.resetPassword)
+	au.POST("/refresh-token", s.refreshToken)
+	au.POST("/change-password", s.changePassword)
 
-	acc := echo.Group("/account", auth.Middleware())
+	acc := echo.Group("/account", auth.AuthenticatedMw)
 	acc.GET("/", s.auth)
 	acc.GET("/user", s.user)
 	acc.POST("/logout", s.logout)
-	acc.POST("/refresh-token", s.refreshToken)
-	acc.POST("/reset-password", s.resetPassword)
-	acc.POST("/change-password", s.changePassword)
 	acc.POST("/verify", s.verifyUser)
-	acc.POST("/resend-verification", s.resendVerification)
+	acc.POST("/send-verification", s.sendVerification)
 }

@@ -27,19 +27,17 @@ func SignToken(userid string) (string, error) {
 	return token.SignedString([]byte(env.JWT_SECRET))
 }
 
-func Middleware() echo.MiddlewareFunc {
-	return echojwt.WithConfig(echojwt.Config{
-		SigningKey: []byte(env.JWT_SECRET),
-		ErrorHandler: func(c echo.Context, err error) error {
-			return c.JSON(http.StatusUnauthorized, echo.Map{
-				"message": "Unauthorized",
-			})
-		},
-		NewClaimsFunc: func(c echo.Context) jwt.Claims {
-			return &jwtClaims{}
-		},
-	})
-}
+var AuthenticatedMw = echojwt.WithConfig(echojwt.Config{
+	SigningKey: []byte(env.JWT_SECRET),
+	ErrorHandler: func(c echo.Context, err error) error {
+		return c.JSON(http.StatusUnauthorized, echo.Map{
+			"message": "Unauthorized",
+		})
+	},
+	NewClaimsFunc: func(c echo.Context) jwt.Claims {
+		return &jwtClaims{}
+	},
+})
 
 func User(c echo.Context) *jwtClaims {
 	user := c.Get("user").(*jwt.Token)

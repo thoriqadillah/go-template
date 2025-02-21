@@ -41,7 +41,7 @@ func New(name string, opts ...Option) Storage {
 
 	provider, ok := providers[name]
 	if !ok {
-		log.Fatalf("Storage provider %s not found", name)
+		log.Fatalf("Storage with %s provider not found", name)
 		return nil
 	}
 

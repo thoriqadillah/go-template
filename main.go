@@ -1,11 +1,9 @@
 package main
 
 import (
-	"app/db"
 	"app/env"
 	"app/lib/log"
 	"app/lib/validator"
-	"app/queue"
 	"app/server"
 	_ "app/server/module"
 	"context"
@@ -48,23 +46,6 @@ func main() {
 
 	godotenv.Load()
 
-	db, pool, err := db.Connect(ctx, env.DB_URL)
-	if err != nil {
-		panic(err)
-	}
-
-	defer db.Close()
-	defer pool.Close()
-
-	river, err := queue.Start(ctx, pool)
-	if err != nil {
-		panic(err)
-	}
-
-	if err := river.Start(ctx); err != nil {
-		panic(err)
-	}
-
 	echo := echo.New()
 	echo.Binder = &customBinder{}
 
@@ -82,6 +63,5 @@ func main() {
 		AllowCredentials: true,
 	}))
 
-	app := server.Create(echo, db, river)
-	app.Start(ctx)
+	server.Run(ctx, echo)
 }

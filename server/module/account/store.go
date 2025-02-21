@@ -5,6 +5,7 @@ import (
 	"app/lib/log"
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/aarondl/opt/omit"
 	"github.com/aarondl/opt/omitnull"
@@ -12,8 +13,10 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/stephenafamo/bob"
 	"github.com/stephenafamo/bob/dialect/psql"
+	"github.com/stephenafamo/bob/dialect/psql/dialect"
 	"github.com/stephenafamo/bob/dialect/psql/im"
 	"github.com/stephenafamo/bob/dialect/psql/sm"
+	"github.com/stephenafamo/bob/dialect/psql/um"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -23,6 +26,7 @@ type Store interface {
 	Get(ctx context.Context, id string) (*models.User, error)
 	Login(ctx context.Context, email string, password string) (string, error)
 	Signup(ctx context.Context, data createUser) (user *models.User, err error)
+	Update(ctx context.Context, id string, data updateUser) error
 }
 
 type userStore struct {
@@ -98,12 +102,42 @@ func (s *userStore) Signup(ctx context.Context, data createUser) (*models.User, 
 	query := models.Users.Insert(
 		&models.UserSetter{
 			ID:       omit.From(v7),
+			Name:     omitnull.From(data.Name),
 			Email:    omit.From(data.Email),
 			Password: omitnull.From(password),
-			Source:   omitnull.From("email"),
+			Source:   omitnull.From(data.Source),
 		},
 		im.Returning("*"),
 	)
 
 	return query.One(ctx, s.db)
+}
+
+func (s *userStore) Update(ctx context.Context, id string, data updateUser) error {
+	uuid, err := uuid.FromString(id)
+	if err != nil {
+		return err
+	}
+
+	q := make([]bob.Mod[*dialect.UpdateQuery], 0)
+	q = append(q, models.UpdateWhere.Users.ID.EQ(uuid))
+	if data.Name != "" {
+		q = append(q, um.SetCol("name").ToArg(data.Name))
+	}
+
+	if data.Password != "" {
+		hash, err := s.hash(data.Password)
+		if err != nil {
+			return err
+		}
+
+		q = append(q, um.SetCol("password").ToArg(hash))
+	}
+
+	if !data.VerifiedAt.Equal(time.Time{}) {
+		q = append(q, um.SetCol("verified_at").ToArg(data.VerifiedAt))
+	}
+
+	_, err = models.Users.Update(q...).Exec(ctx, s.db)
+	return err
 }

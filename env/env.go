@@ -18,6 +18,7 @@ var (
 	JWT_SECRET     = env("JWT_SECRET").String("secret")
 	PORT           = env("PORT").String(":8080")
 	DB_URL         = env("DB_URL").String("postgresql://postgres@localhost:5432/app?sslmode=disable")
+	REDIS_URL      = env("REDIS_URL").String("redis://:@localhost:6379")
 	EMAIL_SENDER   = env("EMAIL_SENDER").String("hallo@app.com")
 	EMAIL_HOST     = env("EMAIL_HOST").String("smtp.app.com")
 	EMAIL_PORT     = env("EMAIL_PORT").Int(587)

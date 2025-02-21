@@ -33,7 +33,7 @@ type Option func(o *option)
 
 type Factory func(o *option) Notifier
 
-func WithQueue(river *river.Client[pgx.Tx]) Option {
+func WithRiverQueue(river *river.Client[pgx.Tx]) Option {
 	return func(o *option) {
 		o.river = river
 	}
@@ -57,7 +57,7 @@ func New(name NotifierName, options ...Option) Notifier {
 
 	provider, ok := providers[name]
 	if !ok {
-		logger.Fatal(fmt.Sprintf("Notifier provider %s not found", name))
+		logger.Fatal(fmt.Sprintf("Notifier with %s provider not found", name))
 		return nil
 	}
 

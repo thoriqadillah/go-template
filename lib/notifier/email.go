@@ -34,7 +34,7 @@ type emailer struct {
 
 func createMailer(opt *option) Notifier {
 	if opt.river == nil {
-		panic("Please provde queue when creating emailer")
+		panic("Please provde river queue when creating emailer")
 	}
 
 	return &emailer{river: opt.river}

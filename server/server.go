@@ -1,8 +1,10 @@
 package server
 
 import (
+	"app/db"
 	"app/env"
 	"app/lib/log"
+	"app/queue"
 	"context"
 	"errors"
 	"net/http"
@@ -10,6 +12,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/labstack/echo/v4"
+	"github.com/redis/go-redis/v9"
 	"github.com/riverqueue/river"
 	"github.com/stephenafamo/bob"
 )
@@ -29,10 +32,11 @@ type Closer interface {
 }
 
 type App struct {
-	echo     *echo.Echo
-	services []Service
-	Db       *bob.DB
-	Queue    *river.Client[pgx.Tx]
+	echo       *echo.Echo
+	services   []Service
+	BobDB      *bob.DB
+	RiverQueue *river.Client[pgx.Tx]
+	Redis      *redis.Client
 }
 
 type Factory func(app *App) Service
@@ -43,12 +47,38 @@ func Register(f ...Factory) {
 	factories = append(factories, f...)
 }
 
-func Create(echo *echo.Echo, db *bob.DB, river *river.Client[pgx.Tx]) *App {
+func Run(ctx context.Context, echo *echo.Echo) {
+	ropt, err := redis.ParseURL(env.REDIS_URL)
+	if err != nil {
+		panic(err)
+	}
+
+	rdb := redis.NewClient(ropt)
+	defer rdb.Close()
+
+	bobdb, pool, err := db.Connect(ctx, env.DB_URL)
+	if err != nil {
+		panic(err)
+	}
+
+	defer bobdb.Close()
+	defer pool.Close()
+
+	river, err := queue.Start(ctx, pool)
+	if err != nil {
+		panic(err)
+	}
+
+	if err := river.Start(ctx); err != nil {
+		panic(err)
+	}
+
 	app := &App{
-		echo:     echo,
-		Db:       db,
-		Queue:    river,
-		services: make([]Service, 0),
+		echo:       echo,
+		BobDB:      bobdb,
+		RiverQueue: river,
+		Redis:      rdb,
+		services:   make([]Service, 0),
 	}
 
 	for _, factory := range factories {
@@ -62,12 +92,8 @@ func Create(echo *echo.Echo, db *bob.DB, river *river.Client[pgx.Tx]) *App {
 		app.services = append(app.services, service)
 	}
 
-	return app
-}
-
-func (a *App) Start(ctx context.Context) {
 	go func() {
-		err := a.echo.Start(env.PORT)
+		err := echo.Start(env.PORT)
 		if err != nil && err != http.ErrServerClosed {
 			logger.Fatal(err.Error())
 		}
@@ -75,7 +101,7 @@ func (a *App) Start(ctx context.Context) {
 
 	<-ctx.Done()
 	logger.Info("Interrupt signal received. Shutting down")
-	for _, service := range a.services {
+	for _, service := range app.services {
 		if closer, ok := service.(Closer); ok {
 			closer.Close()
 		}
@@ -85,9 +111,9 @@ func (a *App) Start(ctx context.Context) {
 	defer hardcancel()
 
 	go func() {
-		err := a.Queue.StopAndCancel(hardctx)
+		err := river.StopAndCancel(hardctx)
 		if err != nil && errors.Is(err, context.DeadlineExceeded) && !errors.Is(err, context.Canceled) {
-			panic(err)
+			logger.Fatal(err.Error())
 		}
 
 		if err == nil || errors.Is(err, context.Canceled) {
@@ -95,7 +121,7 @@ func (a *App) Start(ctx context.Context) {
 		}
 	}()
 
-	if err := a.echo.Shutdown(hardctx); err != nil {
+	if err := echo.Shutdown(hardctx); err != nil {
 		logger.Fatal(err.Error())
 	}
 

@@ -21,7 +21,7 @@ type exampleService struct {
 func CreateService(app *server.App) server.Service {
 	return &exampleService{
 		storage: storage.New(env.STORAGE_DRIVER),
-		email:   notifier.New(notifier.EmailNotifier, notifier.WithQueue(app.Queue)),
+		email:   notifier.New(notifier.EmailNotifier, notifier.WithRiverQueue(app.RiverQueue)),
 	}
 }
 
@@ -101,6 +101,6 @@ func (s *exampleService) CreateRoutes(app *echo.Echo) {
 
 	restricted := r.Group("/restricted")
 
-	restricted.Use(auth.Middleware())
+	restricted.Use(auth.AuthenticatedMw)
 	restricted.GET("/", s.restricted)
 }
