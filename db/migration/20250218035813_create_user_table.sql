@@ -11,6 +11,8 @@ CREATE TABLE users (
     created_at timestamp default now(),
     updated_at timestamp default now()
 );
+
+CREATE INDEX idx_users_id ON users(id);
 -- +goose StatementEnd
 
 -- +goose Down
