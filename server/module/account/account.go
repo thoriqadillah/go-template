@@ -100,10 +100,19 @@ func (s *accountService) getUser(c echo.Context) error {
 	})
 }
 
+func (s *accountService) auth(c echo.Context) error {
+	claims := auth.User(c)
+	return c.JSON(http.StatusOK, echo.Map{
+		"id": claims.UserId,
+	})
+}
+
 func (s *accountService) CreateRoutes(echo *echo.Echo) {
 	r := echo.Group("/account")
 
 	r.POST("/login", s.login)
 	r.POST("/signup", s.signup)
-	r.GET("/", s.getUser, auth.Middleware())
+
+	r.GET("/", s.auth, auth.Middleware())
+	r.GET("/user", s.getUser, auth.Middleware())
 }
