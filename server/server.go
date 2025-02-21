@@ -32,8 +32,6 @@ type Closer interface {
 }
 
 type App struct {
-	echo       *echo.Echo
-	services   []Service
 	BobDB      *bob.DB
 	RiverQueue *river.Client[pgx.Tx]
 	Redis      *redis.Client
@@ -73,12 +71,12 @@ func Run(ctx context.Context, echo *echo.Echo) {
 		panic(err)
 	}
 
+	services := make([]Service, 0)
+
 	app := &App{
-		echo:       echo,
 		BobDB:      bobdb,
 		RiverQueue: river,
 		Redis:      rdb,
-		services:   make([]Service, 0),
 	}
 
 	for _, factory := range factories {
@@ -89,7 +87,7 @@ func Run(ctx context.Context, echo *echo.Echo) {
 			initter.Init()
 		}
 
-		app.services = append(app.services, service)
+		services = append(services, service)
 	}
 
 	go func() {
@@ -101,7 +99,7 @@ func Run(ctx context.Context, echo *echo.Echo) {
 
 	<-ctx.Done()
 	logger.Info("Interrupt signal received. Shutting down")
-	for _, service := range app.services {
+	for _, service := range services {
 		if closer, ok := service.(Closer); ok {
 			closer.Close()
 		}
