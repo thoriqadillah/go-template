@@ -1,2 +1,4 @@
 lib/storage/tmp
 .vscode
+.env
+.env.*

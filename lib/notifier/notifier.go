@@ -41,6 +41,7 @@ func WithRiverQueue(river *river.Client[pgx.Tx]) Option {
 
 var providers = map[NotifierName]Factory{}
 
+// register will register the implementation of the notifier as the provider
 func register(name NotifierName, impl Factory) {
 	providers[name] = impl
 }

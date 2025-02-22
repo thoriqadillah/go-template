@@ -48,6 +48,7 @@ func New(name string, opts ...Option) Storage {
 	return provider(opt)
 }
 
+// register will register the implementation of the storage as the provider
 func register(name string, impl Factory) {
 	providers[name] = impl
 }
