@@ -17,5 +17,6 @@ CREATE INDEX idx_users_id ON users(id);
 
 -- +goose Down
 -- +goose StatementBegin
+DROP INDEX IF EXISTS idx_users_id;
 DROP TABLE users;
 -- +goose StatementEnd
