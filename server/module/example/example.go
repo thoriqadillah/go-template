@@ -1,6 +1,7 @@
 package example
 
 import (
+	"app/common"
 	"app/env"
 	"app/lib/auth"
 	"app/lib/notifier"
@@ -63,6 +64,13 @@ func (s *exampleService) example(c echo.Context) error {
 	return c.String(http.StatusOK, "Hello, World!")
 }
 
+func (s *exampleService) paginate(c echo.Context) error {
+	params := c.QueryParams()
+	paginator := common.Paginate(params)
+
+	return c.JSON(http.StatusOK, paginator.CreatePaginator(nil, 0))
+}
+
 func (s *exampleService) uploadFile(c echo.Context) error {
 	file, err := c.FormFile("file")
 	if err != nil {
@@ -98,6 +106,7 @@ func (s *exampleService) CreateRoutes(app *echo.Echo) {
 	r.GET("/email", s.sendEmail)
 	r.POST("/upload", s.uploadFile)
 	r.POST("/validate", s.validate)
+	r.GET("/paginate", s.paginate)
 
 	restricted := r.Group("/restricted")
 
