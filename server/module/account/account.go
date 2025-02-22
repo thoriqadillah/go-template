@@ -213,19 +213,19 @@ func (s *accountService) changePassword(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
-func (s *accountService) CreateRoutes(echo *echo.Echo) {
-	oa := echo.Group("/oauth")
+func (s *accountService) CreateRoutes(g *echo.Group) {
+	oa := g.Group("/oauth")
 	oa.POST("/login", s.loginOauth)
 	oa.POST("/signup", s.signupOauth)
 
-	au := echo.Group("/auth")
+	au := g.Group("/auth")
 	au.POST("/login", s.login)
 	au.POST("/signup", s.signup)
 	au.POST("/reset-password", s.resetPassword)
 	au.GET("/refresh-token", s.refreshToken)
 	au.PATCH("/change-password", s.changePassword)
 
-	acc := echo.Group("/account", auth.AuthenticatedMw)
+	acc := g.Group("/account", auth.AuthenticatedMw)
 	acc.GET("/", s.auth)
 	acc.GET("/user", s.user)
 	acc.POST("/logout", s.logout)

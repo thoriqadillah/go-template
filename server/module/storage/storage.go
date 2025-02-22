@@ -34,8 +34,8 @@ func (s *storageService) serve(c echo.Context) error {
 	return c.Stream(http.StatusOK, mimetype, file)
 }
 
-func (s *storageService) CreateRoutes(app *echo.Echo) {
-	router := app.Group("/storage")
+func (s *storageService) CreateRoutes(g *echo.Group) {
+	router := g.Group("/storage")
 
 	router.GET("/:filename", s.serve)
 }

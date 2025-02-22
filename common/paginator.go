@@ -8,7 +8,7 @@ import (
 	"github.com/stephenafamo/bob/dialect/psql/dialect"
 )
 
-type pager struct {
+type Pager struct {
 	Page      int   `json:"page"`
 	TotalPage int   `json:"totalPage"`
 	Limit     int   `json:"limit"`
@@ -16,28 +16,28 @@ type pager struct {
 	Items     []any `json:"items"`
 }
 
-type paginator struct {
+type Paginator struct {
 	params url.Values
-	page   int
-	limit  int
-	offset int
+	Page   int
+	Limit  int
+	Offset int
 }
 
-func Paginate(params url.Values) *paginator {
+func Paginate(params url.Values) *Paginator {
 	page := Parse(params.Get("page")).Int(1)
 	limit := Parse(params.Get("limit")).Int(10)
 	offset := (page - 1) * limit
 
-	return &paginator{
+	return &Paginator{
 		params: params,
-		page:   page,
-		limit:  limit,
-		offset: offset,
+		Page:   page,
+		Limit:  limit,
+		Offset: offset,
 	}
 }
 
-func (p *paginator) totalPage(count int) int {
-	total := math.Ceil(float64(count / p.limit))
+func (p *Paginator) totalPage(count int) int {
+	total := math.Ceil(float64(count / p.Limit))
 	if int(total) <= 0 {
 		return 1
 	}
@@ -45,24 +45,24 @@ func (p *paginator) totalPage(count int) int {
 	return int(total)
 }
 
-func (p *paginator) CreatePaginator(slice []any, count int) pager {
-	return pager{
-		Page:      p.page,
-		Items:     slice,
+func (p *Paginator) CreatePager(items []any, count int) Pager {
+	return Pager{
+		Page:      p.Page,
+		Items:     items,
 		Count:     count,
 		TotalPage: p.totalPage(count),
-		Limit:     p.limit,
+		Limit:     p.Limit,
 	}
 }
 
 type FilterFunc func(v Parser) bob.Mod[*dialect.SelectQuery]
 
 type paramBuilder struct {
-	paginator *paginator
+	paginator Paginator
 	mods      []bob.Mod[*dialect.SelectQuery]
 }
 
-func FilterParam(p *paginator) *paramBuilder {
+func FilterParam(p Paginator) *paramBuilder {
 	return &paramBuilder{
 		paginator: p,
 		mods:      make([]bob.Mod[*dialect.SelectQuery], 0),

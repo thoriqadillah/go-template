@@ -20,7 +20,7 @@ import (
 var logger = log.Logger()
 
 type Service interface {
-	CreateRoutes(app *echo.Echo)
+	CreateRoutes(g *echo.Group)
 }
 
 type Initter interface {
@@ -81,7 +81,7 @@ func Run(ctx context.Context, echo *echo.Echo) {
 
 	for _, factory := range factories {
 		service := factory(app)
-		service.CreateRoutes(echo)
+		service.CreateRoutes(echo.Group("/api"))
 
 		if initter, ok := service.(Initter); ok {
 			initter.Init()

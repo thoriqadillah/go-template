@@ -68,7 +68,7 @@ func (s *exampleService) paginate(c echo.Context) error {
 	params := c.QueryParams()
 	paginator := common.Paginate(params)
 
-	return c.JSON(http.StatusOK, paginator.CreatePaginator(nil, 0))
+	return c.JSON(http.StatusOK, paginator.CreatePager(nil, 0))
 }
 
 func (s *exampleService) uploadFile(c echo.Context) error {
@@ -99,8 +99,8 @@ func (s *exampleService) restricted(c echo.Context) error {
 	})
 }
 
-func (s *exampleService) CreateRoutes(app *echo.Echo) {
-	r := app.Group("/example")
+func (s *exampleService) CreateRoutes(g *echo.Group) {
+	r := g.Group("/example")
 
 	r.GET("/", s.example)
 	r.GET("/email", s.sendEmail)
