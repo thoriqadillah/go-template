@@ -99,8 +99,8 @@ func (s *exampleService) restricted(c echo.Context) error {
 	})
 }
 
-func (s *exampleService) CreateRoutes(g *echo.Group) {
-	r := g.Group("/example")
+func (s *exampleService) CreateRoutes(e *echo.Echo) {
+	r := e.Group("/api/example")
 
 	r.GET("/", s.example)
 	r.GET("/email", s.sendEmail)
