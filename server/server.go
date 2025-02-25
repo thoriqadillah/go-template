@@ -14,7 +14,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/redis/go-redis/v9"
 	"github.com/riverqueue/river"
-	"github.com/stephenafamo/bob"
+	"github.com/uptrace/bun"
 )
 
 var logger = log.Logger()
@@ -32,7 +32,7 @@ type Closer interface {
 }
 
 type App struct {
-	BobDB      *bob.DB
+	Db         *bun.DB
 	RiverQueue *river.Client[pgx.Tx]
 	Redis      *redis.Client
 }
@@ -54,12 +54,12 @@ func Run(ctx context.Context, echo *echo.Echo) {
 	rdb := redis.NewClient(ropt)
 	defer rdb.Close()
 
-	bobdb, pool, err := db.Connect(ctx, env.DB_URL)
+	db, pool, err := db.Connect(ctx, env.DB_URL)
 	if err != nil {
 		panic(err)
 	}
 
-	defer bobdb.Close()
+	defer db.Close()
 	defer pool.Close()
 
 	river, err := queue.Start(ctx, pool)
@@ -74,7 +74,7 @@ func Run(ctx context.Context, echo *echo.Echo) {
 	services := make([]Service, 0)
 
 	app := &App{
-		BobDB:      bobdb,
+		Db:         db,
 		RiverQueue: river,
 		Redis:      rdb,
 	}

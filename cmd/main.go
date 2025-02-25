@@ -20,16 +20,16 @@ func main() {
 
 	godotenv.Load()
 
-	bobdb, pool, err := db.Connect(ctx, env.DB_URL)
+	db, pool, err := db.Connect(ctx, env.DB_URL)
 	if err != nil {
 		panic(err)
 	}
 
-	defer bobdb.Close()
+	defer db.Close()
 	defer pool.Close()
 
 	app := &command.App{
-		BobDB: bobdb,
+		Db: db,
 	}
 
 	// INFO: register all the command here

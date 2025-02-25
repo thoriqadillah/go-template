@@ -12,10 +12,8 @@ func CreateCommand(ctx context.Context, app *command.App) *cobra.Command {
 		Use:   "seed",
 		Short: "Seed the database",
 		Run: func(cmd *cobra.Command, args []string) {
-			for _, seeder := range seeders {
-				if err := seeder.Seed(app.BobDB); err != nil {
-					panic(err)
-				}
+			if err := Seed(ctx, app.Db); err != nil {
+				panic(err)
 			}
 		},
 	}

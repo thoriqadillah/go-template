@@ -1,66 +1,71 @@
 package account
 
 import (
-	"app/db/models"
+	"app/common"
+	"app/db/model"
 	"app/lib/log"
 	"context"
+	"database/sql"
 	"net/http"
 	"time"
 
-	"github.com/aarondl/opt/omit"
-	"github.com/aarondl/opt/omitnull"
 	"github.com/gofrs/uuid/v5"
 	"github.com/labstack/echo/v4"
-	"github.com/stephenafamo/bob"
-	"github.com/stephenafamo/bob/dialect/psql/dialect"
-	"github.com/stephenafamo/bob/dialect/psql/im"
-	"github.com/stephenafamo/bob/dialect/psql/um"
-	"golang.org/x/crypto/bcrypt"
+	"github.com/uptrace/bun"
 )
 
 var logger = log.Logger()
 
 type Store interface {
-	Get(ctx context.Context, id string) (*models.User, error)
-	GetByEmail(ctx context.Context, email string) (*models.User, error)
+	Get(ctx context.Context, id string) (*model.User, error)
+	GetByEmail(ctx context.Context, email string) (*model.User, error)
 	Login(ctx context.Context, email string, password string) (string, error)
-	Signup(ctx context.Context, data createUser) (user *models.User, err error)
+	Signup(ctx context.Context, data createUser) (user *model.User, err error)
 	Update(ctx context.Context, id string, data updateUser) error
 }
 
 type userStore struct {
-	db *bob.DB
+	db *bun.DB
 }
 
-func NewStore(db *bob.DB) Store {
+func NewStore(db *bun.DB) Store {
 	return &userStore{db}
 }
 
-func (s *userStore) hash(password string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
-	return string(bytes), err
+func (s *userStore) Get(ctx context.Context, id string) (*model.User, error) {
+	user := new(model.User)
+	query := s.db.NewSelect().
+		Model(user).
+		Where("id = ?", id)
+
+	err := query.Scan(ctx, user)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+
+	if err != nil {
+		return nil, nil
+	}
+
+	return user, nil
 }
 
-func (s *userStore) checkHash(password string, hash string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
-	return err == nil
-}
+func (s *userStore) GetByEmail(ctx context.Context, email string) (*model.User, error) {
+	user := new(model.User)
+	query := s.db.NewSelect().
+		Model(user).
+		Where("email = ?", email)
 
-func (s *userStore) Get(ctx context.Context, id string) (*models.User, error) {
-	userid, err := uuid.FromString(id)
+	err := query.Scan(ctx, user)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+
 	if err != nil {
 		return nil, err
 	}
 
-	return models.Users.Query(
-		models.SelectWhere.Users.ID.EQ(userid),
-	).One(ctx, s.db)
-}
-
-func (s *userStore) GetByEmail(ctx context.Context, email string) (*models.User, error) {
-	return models.Users.Query(
-		models.SelectWhere.Users.Email.EQ(email),
-	).One(ctx, s.db)
+	return user, nil
 }
 
 func (s *userStore) Login(ctx context.Context, email string, password string) (string, error) {
@@ -69,18 +74,22 @@ func (s *userStore) Login(ctx context.Context, email string, password string) (s
 		return "", err
 	}
 
-	if ok := s.checkHash(password, user.Password.GetOr("")); !ok {
+	if user.Password == nil {
+		return "", echo.NewHTTPError(http.StatusNotFound, "Please login with your google account")
+	}
+
+	if ok := common.CheckHash(password, *user.Password); !ok {
 		return "", echo.NewHTTPError(http.StatusNotFound, "User not found")
 	}
 
-	return user.ID.String(), nil
+	return user.Id, nil
 }
 
-func (s *userStore) Signup(ctx context.Context, data createUser) (*models.User, error) {
+func (s *userStore) Signup(ctx context.Context, data createUser) (*model.User, error) {
 	// to accomodate oauth signup
 	password := new(string)
 	if data.Password != nil {
-		pass, err := s.hash(*data.Password)
+		pass, err := common.Hash(*data.Password)
 		if err != nil {
 			return nil, err
 		}
@@ -88,63 +97,67 @@ func (s *userStore) Signup(ctx context.Context, data createUser) (*models.User, 
 		password = &pass
 	}
 
-	v7, err := uuid.NewV7()
+	user, err := s.GetByEmail(ctx, data.Email)
 	if err != nil {
 		return nil, err
 	}
 
-	count, err := models.Users.Query(
-		models.SelectWhere.Users.Email.EQ(data.Email),
-	).Count(ctx, s.db)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if count > 0 {
+	if user != nil {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Email already exist")
 	}
 
-	query := models.Users.Insert(
-		&models.UserSetter{
-			ID:         omit.From(v7),
-			Name:       omitnull.From(data.Name),
-			Email:      omit.From(data.Email),
-			Password:   omitnull.FromPtr(password),
-			Source:     omitnull.From(data.Source),
-			VerifiedAt: omitnull.FromOmit(omit.FromCond(time.Now(), data.Source == "google")),
-		},
-		im.Returning("*"),
-	)
+	id, _ := uuid.NewV7()
+	var verifiedAt *time.Time
+	if data.Source == "google" {
+		now := time.Now()
+		verifiedAt = &now
+	} else {
+		verifiedAt = nil
+	}
 
-	return query.One(ctx, s.db)
+	newUser := &model.User{
+		Id:         id.String(),
+		Email:      data.Email,
+		Password:   password,
+		Name:       data.Name,
+		Source:     data.Source,
+		VerifiedAt: verifiedAt,
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
+	}
+
+	if _, err := s.db.NewInsert().Model(newUser).Exec(ctx); err != nil {
+		return nil, err
+	}
+
+	return newUser, nil
 }
 
 func (s *userStore) Update(ctx context.Context, id string, data updateUser) error {
-	uuid, err := uuid.FromString(id)
-	if err != nil {
-		return err
-	}
+	query := s.db.NewUpdate().
+		Model((*model.User)(nil)).
+		Where("id = ?", id)
 
-	q := make([]bob.Mod[*dialect.UpdateQuery], 0)
-	q = append(q, models.UpdateWhere.Users.ID.EQ(uuid))
 	if data.Name != "" {
-		q = append(q, um.SetCol("name").ToArg(data.Name))
+		query = query.Set("name = ?", data.Name)
 	}
 
 	if data.Password != "" {
-		hash, err := s.hash(data.Password)
+		password, err := common.Hash(data.Password)
 		if err != nil {
 			return err
 		}
 
-		q = append(q, um.SetCol("password").ToArg(hash))
+		query = query.Set("password = ?", password)
 	}
 
 	if !data.VerifiedAt.IsZero() {
-		q = append(q, um.SetCol("verified_at").ToArg(data.VerifiedAt))
+		query = query.Set("verified_at = ?", data.VerifiedAt)
 	}
 
-	_, err = models.Users.Update(q...).Exec(ctx, s.db)
-	return err
+	if _, err := query.Exec(ctx); err != nil {
+		return err
+	}
+
+	return nil
 }

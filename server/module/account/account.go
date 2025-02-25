@@ -6,6 +6,7 @@ import (
 	"app/server"
 	"context"
 	"crypto/rand"
+	"fmt"
 	"math/big"
 	"net/http"
 	"time"
@@ -22,7 +23,7 @@ type accountService struct {
 
 func CreateService(app *server.App) server.Service {
 	return &accountService{
-		store: NewStore(app.BobDB),
+		store: NewStore(app.Db),
 		cache: app.Redis,
 		emailer: notifier.New(notifier.EmailNotifier,
 			notifier.WithRiverQueue(app.RiverQueue),
@@ -44,7 +45,8 @@ func (s *accountService) sendVerificationEmail(ctx context.Context, email string
 		return err
 	}
 
-	if err := s.cache.Set(ctx, email, otp, time.Minute*30).Err(); err != nil {
+	key := fmt.Sprintf("verify:%s", email)
+	if err := s.cache.Set(ctx, key, otp, time.Minute*30).Err(); err != nil {
 		return err
 	}
 
@@ -98,7 +100,7 @@ func (s *accountService) signup(c echo.Context) error {
 		return err
 	}
 
-	token, err := auth.SignToken(user.ID.String())
+	token, err := auth.SignToken(user.Id)
 	if err != nil {
 		return err
 	}
@@ -127,15 +129,7 @@ func (s *accountService) user(c echo.Context) error {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{
-		"id":         user.ID,
-		"email":      user.Email,
-		"name":       user.Name,
-		"source":     user.Source,
-		"createdAt":  user.CreatedAt,
-		"updatedAt":  user.UpdatedAt,
-		"verifiedAt": user.VerifiedAt,
-	})
+	return c.JSON(http.StatusOK, user)
 }
 
 func (s *accountService) auth(c echo.Context) error {
@@ -182,7 +176,8 @@ func (s *accountService) verifyUser(c echo.Context) error {
 		return err
 	}
 
-	otp, err := s.cache.Get(ctx, user.Email).Result()
+	key := fmt.Sprintf("verify:%s", user.Email)
+	otp, err := s.cache.Get(ctx, key).Result()
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid or expired OTP")
 	}
@@ -196,7 +191,7 @@ func (s *accountService) verifyUser(c echo.Context) error {
 		return err
 	}
 
-	if err := s.cache.Del(ctx, user.Email).Err(); err != nil {
+	if err := s.cache.Del(ctx, key).Err(); err != nil {
 		return err
 	}
 
@@ -204,12 +199,68 @@ func (s *accountService) verifyUser(c echo.Context) error {
 }
 
 func (s *accountService) resetPassword(c echo.Context) error {
-	// TODO
+	ctx := c.Request().Context()
+
+	email := c.QueryParam("email")
+	if email == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Email query is required")
+	}
+
+	otp, err := s.generateOTP()
+	if err != nil {
+		return err
+	}
+
+	key := fmt.Sprintf("reset:%s", email)
+	if err := s.cache.Set(ctx, key, otp, time.Minute*30).Err(); err != nil {
+		return err
+	}
+
+	err = s.emailer.Send(notifier.Message{
+		Subject:  "Password Reset",
+		Template: "reset-password.html",
+		To:       []string{email},
+		Data: notifier.Data{
+			"otp": otp,
+		},
+	})
+
+	if err != nil {
+		return err
+	}
+
 	return c.NoContent(http.StatusOK)
 }
 
 func (s *accountService) changePassword(c echo.Context) error {
-	// TODO
+	ctx := c.Request().Context()
+
+	var payload changePassword
+	if err := c.Bind(&payload); err != nil {
+		return err
+	}
+
+	key := fmt.Sprintf("reset:%s", payload.Email)
+	otp, err := s.cache.Get(ctx, key).Result()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid or expired OTP")
+	}
+
+	if payload.Otp != otp {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid or expired OTP")
+	}
+
+	user, err := s.store.GetByEmail(ctx, payload.Email)
+	if err != nil {
+		return err
+	}
+
+	update := updateUser{
+		Password: payload.Password,
+	}
+	if err := s.store.Update(ctx, user.Id, update); err != nil {
+		return err
+	}
 	return c.NoContent(http.StatusOK)
 }
 

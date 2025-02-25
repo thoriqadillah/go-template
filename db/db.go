@@ -1,6 +1,7 @@
 package db
 
 import (
+	"app/env"
 	"context"
 	"database/sql"
 	"fmt"
@@ -10,28 +11,41 @@ import (
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
-	"github.com/stephenafamo/bob"
+	"github.com/pressly/goose/v3"
+	"github.com/uptrace/bun"
+	"github.com/uptrace/bun/dialect/pgdialect"
+	_ "github.com/uptrace/bun/driver/pgdriver"
+	"github.com/uptrace/bun/extra/bundebug"
 )
 
 var sqldb *sql.DB
-var db *bob.DB
+var bundb *bun.DB
 
-func Db() *bob.DB {
-	return db
+func Db() *bun.DB {
+	return bundb
 }
 
-func Connect(ctx context.Context, connstr string) (*bob.DB, *pgxpool.Pool, error) {
+func Connect(ctx context.Context, connstr string) (*bun.DB, *pgxpool.Pool, error) {
 	pool, err := pgxpool.New(ctx, connstr)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	sqldb = stdlib.OpenDBFromPool(pool)
-	bob := bob.NewDB(sqldb)
+	bundb = bun.NewDB(sqldb, pgdialect.New())
+	bundb.AddQueryHook(bundebug.NewQueryHook(
+		bundebug.WithVerbose(env.DEV),
+	))
 
-	db = &bob
+	return bundb, pool, sqldb.Ping()
+}
 
-	return db, pool, sqldb.Ping()
+func Migrate(pathDir string) error {
+	if err := goose.SetDialect("postgres"); err != nil {
+		return err
+	}
+
+	return goose.Up(sqldb, pathDir)
 }
 
 func SetupTest(ctx context.Context) (purge func()) {
@@ -51,7 +65,7 @@ func SetupTest(ctx context.Context) (purge func()) {
 		Tag:        "17-alpine",
 		Env: []string{
 			"POSTGRES_HOST_AUTH_METHOD=trust",
-			"POSTGRES_DB=apptest",
+			"POSTGRES_DB=packformtest",
 			"listen_addresses = '*'",
 		},
 	}, func(config *docker.HostConfig) {
@@ -68,7 +82,7 @@ func SetupTest(ctx context.Context) (purge func()) {
 
 	pg.Expire(30)
 	hostPort := pg.GetHostPort("5432/tcp")
-	pgUrl := fmt.Sprintf("postgresql://postgres@%s/apptest?sslmode=disable", hostPort)
+	pgUrl := fmt.Sprintf("postgresql://postgres@%s/packformtest?sslmode=disable", hostPort)
 
 	// Wait for the Postgres to be ready
 	err = pool.Retry(func() error {

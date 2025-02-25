@@ -1,5 +1,0 @@
-psql:
-  dsn: "postgresql://postgres@localhost:5432/app?sslmode=disable"
-  except:
-    "/^river/":
-    "/^goose/":

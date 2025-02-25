@@ -4,11 +4,11 @@ import (
 	"context"
 
 	"github.com/spf13/cobra"
-	"github.com/stephenafamo/bob"
+	"github.com/uptrace/bun"
 )
 
 type App struct {
-	BobDB *bob.DB
+	Db *bun.DB
 }
 
 type CommandFunc func(ctx context.Context, app *App) *cobra.Command

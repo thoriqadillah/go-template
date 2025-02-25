@@ -7,9 +7,9 @@ CREATE TABLE users (
     name varchar(255),
     source varchar(255),
     reset_token text,
-    verified_at timestamp,
-    created_at timestamp default now(),
-    updated_at timestamp default now()
+    verified_at timestamptz,
+    created_at timestamptz default now(),
+    updated_at timestamptz default now()
 );
 
 CREATE INDEX idx_users_id ON users(id);

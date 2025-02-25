@@ -82,8 +82,9 @@ func (s *exampleService) uploadFile(c echo.Context) error {
 		return err
 	}
 
+	id, _ := uuid.NewV7()
 	ext := filepath.Ext(file.Filename)
-	filename := uuid.NewString() + ext
+	filename := id.String() + ext
 	url, err := s.storage.Upload(filename, src)
 	if err != nil {
 		return err
