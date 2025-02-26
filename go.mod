@@ -3,7 +3,6 @@ module app
 go 1.23.6
 
 require (
-	github.com/brpaz/echozap v1.1.3
 	github.com/go-playground/locales v0.14.1
 	github.com/go-playground/universal-translator v0.18.1
 	github.com/go-playground/validator/v10 v10.24.0
@@ -20,7 +19,6 @@ require (
 	github.com/riverqueue/river v0.17.0
 	github.com/riverqueue/river/riverdriver/riverpgxv5 v0.17.0
 	github.com/spf13/cobra v1.9.1
-	github.com/stephenafamo/bob v0.30.0
 	github.com/stretchr/testify v1.10.0
 	github.com/uptrace/bun v1.2.10
 	github.com/uptrace/bun/dialect/pgdialect v1.2.10
@@ -68,14 +66,12 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/puzpuzpuz/xsync/v3 v3.5.1 // indirect
-	github.com/qdm12/reprint v0.0.0-20200326205758-722754a53494 // indirect
 	github.com/riverqueue/river/riverdriver v0.17.0 // indirect
 	github.com/riverqueue/river/rivershared v0.17.0 // indirect
 	github.com/riverqueue/river/rivertype v0.17.0 // indirect
 	github.com/sethvargo/go-retry v0.3.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
-	github.com/stephenafamo/scan v0.6.1 // indirect
 	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
