@@ -51,9 +51,9 @@ func (s *accountService) sendVerificationEmail(ctx context.Context, email string
 	}
 
 	return s.emailer.Send(notifier.Message{
-		To:       []string{email},
-		Subject:  "Email Verification",
-		Template: "verify.html",
+		To:      []string{email},
+		Subject: "Email Verification",
+		Body:    "verify.html",
 		Data: notifier.Data{
 			"otp": otp,
 		},
@@ -217,9 +217,9 @@ func (s *accountService) resetPassword(c echo.Context) error {
 	}
 
 	err = s.emailer.Send(notifier.Message{
-		Subject:  "Password Reset",
-		Template: "reset-password.html",
-		To:       []string{email},
+		Subject: "Password Reset",
+		Body:    "reset-password.html",
+		To:      []string{email},
 		Data: notifier.Data{
 			"otp": otp,
 		},

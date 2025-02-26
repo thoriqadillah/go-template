@@ -7,10 +7,12 @@ import (
 	"embed"
 	"fmt"
 	"log"
+	"path/filepath"
 	"text/template"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/riverqueue/river"
+	"go.uber.org/zap"
 	"gopkg.in/gomail.v2"
 )
 
@@ -76,14 +78,14 @@ func (w *emailWorker) Work(ctx context.Context, job *river.Job[emailArg]) error 
 }
 
 func (e *emailWorker) send(m Message) error {
-	msg := m.Text
 	mimetype := "text/plain"
+	msg := m.Body
 
-	if m.Template != "" {
+	ext := filepath.Ext(m.Body)
+	if ext == ".html" {
 		mimetype = "text/html"
-
 		var buff bytes.Buffer
-		if err := templates.ExecuteTemplate(&buff, m.Template, m.Data); err != nil {
+		if err := templates.ExecuteTemplate(&buff, m.Body, m.Data); err != nil {
 			return err
 		}
 
@@ -91,7 +93,7 @@ func (e *emailWorker) send(m Message) error {
 	}
 
 	if env.DEV {
-		logger.Info(msg)
+		logger.Info("Email message", zap.Any("data", m))
 		return nil
 	}
 
