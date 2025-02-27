@@ -4,7 +4,7 @@ import (
 	"app/db"
 	"app/env"
 	"app/lib/log"
-	"app/queue"
+	"app/lib/queue"
 	"context"
 	"errors"
 	"net/http"
@@ -32,9 +32,9 @@ type Closer interface {
 }
 
 type App struct {
-	Db         *bun.DB
-	RiverQueue *river.Client[pgx.Tx]
-	Redis      *redis.Client
+	Db    *bun.DB
+	Queue *river.Client[pgx.Tx]
+	Cache *redis.Client
 }
 
 type Factory func(app *App) Service
@@ -74,9 +74,9 @@ func Run(ctx context.Context, echo *echo.Echo) {
 	services := make([]Service, 0)
 
 	app := &App{
-		Db:         db,
-		RiverQueue: river,
-		Redis:      rdb,
+		Db:    db,
+		Queue: river,
+		Cache: rdb,
 	}
 
 	for _, factory := range factories {

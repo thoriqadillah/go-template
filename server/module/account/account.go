@@ -26,9 +26,9 @@ type accountService struct {
 func CreateService(app *server.App) server.Service {
 	return &accountService{
 		store: NewStore(app.Db),
-		cache: app.Redis,
+		cache: app.Cache,
 		emailer: notifier.New(notifier.EmailNotifier,
-			notifier.WithRiverQueue(app.RiverQueue),
+			notifier.WithRiverQueue(app.Queue),
 		),
 	}
 }
