@@ -57,7 +57,7 @@ func (s *exampleService) sendEmail(c echo.Context) error {
 		return err
 	}
 
-	return c.String(http.StatusOK, "Email sent")
+	return c.NoContent(http.StatusOK)
 }
 
 func (s *exampleService) example(c echo.Context) error {
