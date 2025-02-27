@@ -9,7 +9,7 @@ type createUser struct {
 	Name     string  `json:"name" validate:"required"`
 	Email    string  `json:"email" validate:"required,email"`
 	Password *string `json:"password" validate:"required,gte=6,lte=16"`
-	Source   string  `json:"source" validate:"required,oneof='email google"`
+	Source   string  `json:"source" validate:"required,oneof=email google"`
 }
 
 func (u *createUser) Validate() error {
@@ -39,4 +39,9 @@ type changePassword struct {
 
 func (u *changePassword) Validate() error {
 	return validator.Struct(u)
+}
+
+type oauthReq struct {
+	Token    string `json:"token" validate:"required"`
+	Provider string `json:"provider" validate:"required,oneof=google"`
 }

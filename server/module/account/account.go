@@ -2,6 +2,7 @@ package account
 
 import (
 	"app/lib/auth"
+	"app/lib/auth/oauth"
 	"app/lib/notifier"
 	"app/server"
 	"context"
@@ -111,13 +112,67 @@ func (s *accountService) signup(c echo.Context) error {
 }
 
 func (s *accountService) loginOauth(c echo.Context) error {
-	// TODO
-	return c.NoContent(http.StatusOK)
+	ctx := c.Request().Context()
+
+	var req oauthReq
+	if err := c.Bind(&req); err != nil {
+		return err
+	}
+
+	oauth := oauth.Create(req.Provider)
+	user, err := oauth.Validate(ctx, req.Token)
+	if err != nil {
+		return err
+	}
+
+	id, err := s.store.Login(ctx, user.Email)
+	if err != nil {
+		return err
+	}
+
+	token, err := auth.SignToken(id)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, echo.Map{
+		"token": token,
+	})
 }
 
 func (s *accountService) signupOauth(c echo.Context) error {
-	// TODO
-	return c.NoContent(http.StatusOK)
+	ctx := c.Request().Context()
+
+	var req oauthReq
+	if err := c.Bind(&req); err != nil {
+		return err
+	}
+
+	oauth := oauth.Create(req.Provider)
+	user, err := oauth.Validate(ctx, req.Token)
+	if err != nil {
+		return err
+	}
+
+	data := createUser{
+		Name:   user.Name,
+		Email:  user.Email,
+		Source: req.Provider,
+	}
+
+	u, err := s.store.Signup(ctx, data)
+	if err != nil {
+		return err
+	}
+
+	token, err := auth.SignToken(u.Id)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusCreated, echo.Map{
+		"token": token,
+	})
 }
 
 func (s *accountService) user(c echo.Context) error {

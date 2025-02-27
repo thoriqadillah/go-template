@@ -64,11 +64,11 @@ func Run(ctx context.Context, echo *echo.Echo) {
 
 	river, err := queue.Start(ctx, pool)
 	if err != nil {
-		logger.Error(err.Error())
+		panic(err)
 	}
 
 	if err := river.Start(ctx); err != nil {
-		logger.Error(err.Error())
+		panic(err)
 	}
 
 	services := make([]Service, 0)

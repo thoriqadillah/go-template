@@ -19,7 +19,7 @@ var logger = log.Logger()
 type Store interface {
 	Get(ctx context.Context, id string) (*model.User, error)
 	GetByEmail(ctx context.Context, email string) (*model.User, error)
-	Login(ctx context.Context, email string, password string) (string, error)
+	Login(ctx context.Context, email string, password ...string) (string, error)
 	Signup(ctx context.Context, data createUser) (user *model.User, err error)
 	Update(ctx context.Context, id string, data updateUser) error
 }
@@ -68,18 +68,23 @@ func (s *userStore) GetByEmail(ctx context.Context, email string) (*model.User, 
 	return user, nil
 }
 
-func (s *userStore) Login(ctx context.Context, email string, password string) (string, error) {
+func (s *userStore) Login(ctx context.Context, email string, password ...string) (string, error) {
 	user, err := s.GetByEmail(ctx, email)
 	if err != nil {
 		return "", err
 	}
 
-	if user.Password == nil {
-		return "", echo.NewHTTPError(http.StatusNotFound, "Please login with your google account")
-	}
+	if user.Source == "email" {
+		if len(password) == 0 {
+			return "", echo.NewHTTPError(http.StatusInternalServerError, "Please provide password for user with email login")
+		}
 
-	if ok := common.CheckHash(password, *user.Password); !ok {
-		return "", echo.NewHTTPError(http.StatusNotFound, "User not found")
+		p := password[0]
+		if ok := common.CheckHash(p, *user.Password); !ok {
+			return "", echo.NewHTTPError(http.StatusNotFound, "User not found")
+		}
+
+		return user.Id, nil
 	}
 
 	return user.Id, nil

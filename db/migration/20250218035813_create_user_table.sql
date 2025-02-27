@@ -6,7 +6,6 @@ CREATE TABLE users (
     password text,
     name varchar(255),
     source varchar(255),
-    reset_token text,
     verified_at timestamptz,
     created_at timestamptz default now(),
     updated_at timestamptz default now()
