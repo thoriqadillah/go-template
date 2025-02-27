@@ -1,6 +1,7 @@
 package account
 
 import (
+	"app/env"
 	"app/lib/auth"
 	"app/lib/auth/oauth"
 	"app/lib/notifier"
@@ -61,6 +62,26 @@ func (s *accountService) sendVerificationEmail(ctx context.Context, email string
 	})
 }
 
+func (s *accountService) createRefreshToken(c echo.Context, token string) {
+	sameSite := http.SameSiteNoneMode
+	if c.Scheme() == "https" {
+		sameSite = http.SameSiteLaxMode
+	}
+
+	cookie := http.Cookie{
+		Name:        "refresh-token",
+		HttpOnly:    true,
+		SameSite:    sameSite,
+		Secure:      c.Scheme() == "https",
+		Partitioned: c.Scheme() == "https",
+		Path:        "/",
+		Expires:     time.Now().Add(7 * 24 * time.Hour),
+		Value:       token,
+	}
+
+	c.SetCookie(&cookie)
+}
+
 func (s *accountService) login(c echo.Context) error {
 	ctx := c.Request().Context()
 
@@ -79,6 +100,7 @@ func (s *accountService) login(c echo.Context) error {
 		return err
 	}
 
+	s.createRefreshToken(c, token)
 	return c.JSON(http.StatusOK, echo.Map{
 		"token": token,
 	})
@@ -106,6 +128,7 @@ func (s *accountService) signup(c echo.Context) error {
 		return err
 	}
 
+	s.createRefreshToken(c, token)
 	return c.JSON(http.StatusCreated, echo.Map{
 		"token": token,
 	})
@@ -135,6 +158,7 @@ func (s *accountService) loginOauth(c echo.Context) error {
 		return err
 	}
 
+	s.createRefreshToken(c, token)
 	return c.JSON(http.StatusOK, echo.Map{
 		"token": token,
 	})
@@ -170,6 +194,7 @@ func (s *accountService) signupOauth(c echo.Context) error {
 		return err
 	}
 
+	s.createRefreshToken(c, token)
 	return c.JSON(http.StatusCreated, echo.Map{
 		"token": token,
 	})
@@ -195,13 +220,50 @@ func (s *accountService) auth(c echo.Context) error {
 }
 
 func (s *accountService) logout(c echo.Context) error {
-	// TODO
+	sameSite := http.SameSiteNoneMode
+	if env.PROD {
+		sameSite = http.SameSiteLaxMode
+	}
+
+	cookie := http.Cookie{
+		Name:        "refresh-token",
+		HttpOnly:    true,
+		SameSite:    sameSite,
+		Secure:      env.PROD,
+		Partitioned: env.PROD,
+		Path:        "/",
+		MaxAge:      -1,
+		Value:       "",
+	}
+
+	c.SetCookie(&cookie)
 	return c.NoContent(http.StatusOK)
 }
 
 func (s *accountService) refreshToken(c echo.Context) error {
-	// TODO
-	return c.NoContent(http.StatusOK)
+	cookie, err := c.Cookie("refresh-token")
+	if err != nil {
+		return echo.NewHTTPError(http.StatusUnauthorized, "Unauthorized")
+	}
+
+	if cookie == nil {
+		return echo.NewHTTPError(http.StatusUnauthorized, "Unauthorized")
+	}
+
+	claims, err := auth.DecodeToken(cookie.Value)
+	if err != nil {
+		return err
+	}
+
+	token, err := auth.SignToken(claims.UserId)
+	if err != nil {
+		return err
+	}
+
+	s.createRefreshToken(c, token)
+	return c.JSON(http.StatusOK, echo.Map{
+		"token": token,
+	})
 }
 
 func (s *accountService) sendVerification(c echo.Context) error {

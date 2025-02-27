@@ -27,6 +27,35 @@ func SignToken(userid string) (string, error) {
 	return token.SignedString([]byte(env.JWT_SECRET))
 }
 
+func DecodeToken(tokenStr string) (*jwtClaims, error) {
+	token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
+		if t.Method.Alg() != echojwt.AlgorithmHS256 {
+			return nil, echo.NewHTTPError(http.StatusUnauthorized, "Unauthorized")
+		}
+
+		return []byte(env.JWT_SECRET), nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	mapClaims := token.Claims.(jwt.MapClaims)
+	expiresAt, err := mapClaims.GetExpirationTime()
+	if err != nil {
+		return nil, err
+	}
+
+	claims := &jwtClaims{
+		UserId: mapClaims["id"].(string),
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: expiresAt,
+		},
+	}
+
+	return claims, nil
+}
+
 var AuthenticatedMw = echojwt.WithConfig(echojwt.Config{
 	SigningKey: []byte(env.JWT_SECRET),
 	ErrorHandler: func(c echo.Context, err error) error {
