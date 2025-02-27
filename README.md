@@ -12,7 +12,7 @@
 - Change your db name in the docker compose
 
 ## Build The Project
-### With docker (WIP)
+### With docker
 ```bash
 docker compose up --build
 ```
