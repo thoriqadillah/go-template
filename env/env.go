@@ -26,4 +26,5 @@ var (
 	EMAIL_USERNAME = env("EMAIL_USERNAME").String("hello@app.com")
 	EMAIL_PASSWORD = env("EMAIL_PASSWORD").String("password")
 	STORAGE_DRIVER = env("STORAGE_DRIVER").String("local")
+	SENTRY_DSN     = env("SENTRY_DSN").String()
 )

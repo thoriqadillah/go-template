@@ -7,12 +7,15 @@ import (
 	"app/server"
 	_ "app/server/module"
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"regexp"
 	"syscall"
 
+	"github.com/getsentry/sentry-go"
+	sentryecho "github.com/getsentry/sentry-go/echo"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -39,11 +42,26 @@ func (b *customBinder) Bind(i interface{}, c echo.Context) error {
 	return nil
 }
 
+func init() {
+	godotenv.Load()
+
+	err := sentry.Init(sentry.ClientOptions{
+		Dsn:              env.SENTRY_DSN,
+		Debug:            env.DEV,
+		Environment:      env.APP_ENV,
+		AttachStacktrace: true,
+		EnableTracing:    true,
+		TracesSampleRate: 1,
+	})
+
+	if err != nil {
+		fmt.Println("Error initializing sentry: ", err)
+	}
+}
+
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGABRT, syscall.SIGTERM)
 	defer stop()
-
-	godotenv.Load()
 
 	echo := echo.New()
 	echo.Binder = &customBinder{}
@@ -51,6 +69,9 @@ func main() {
 	logger := log.Logger()
 	defer logger.Sync()
 
+	echo.Use(sentryecho.New(sentryecho.Options{
+		Repanic: true,
+	}))
 	echo.Use(middleware.Recover())
 	echo.Use(log.Middleware())
 	echo.Use(middleware.Gzip())
