@@ -219,7 +219,7 @@ func (s *accountService) auth(c echo.Context) error {
 	})
 }
 
-func (s *accountService) logout(c echo.Context) error {
+func (s *accountService) deleteCookie(c echo.Context) {
 	sameSite := http.SameSiteNoneMode
 	if env.PROD {
 		sameSite = http.SameSiteLaxMode
@@ -237,6 +237,10 @@ func (s *accountService) logout(c echo.Context) error {
 	}
 
 	c.SetCookie(&cookie)
+}
+
+func (s *accountService) logout(c echo.Context) error {
+	s.deleteCookie(c)
 	return c.NoContent(http.StatusOK)
 }
 
@@ -381,6 +385,18 @@ func (s *accountService) changePassword(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
+func (s *accountService) deleteAccount(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	user := auth.User(c)
+	if err := s.store.Delete(ctx, user.UserId); err != nil {
+		return err
+	}
+
+	s.deleteCookie(c)
+	return c.NoContent(http.StatusOK)
+}
+
 func (s *accountService) CreateRoutes(e *echo.Echo) {
 	r := e.Group("/api")
 
@@ -401,4 +417,5 @@ func (s *accountService) CreateRoutes(e *echo.Echo) {
 	acc.POST("/logout", s.logout)
 	acc.PATCH("/verify", s.verifyUser)
 	acc.POST("/send-verification", s.sendVerification)
+	acc.DELETE("/", s.deleteAccount)
 }

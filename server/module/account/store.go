@@ -22,6 +22,7 @@ type Store interface {
 	Login(ctx context.Context, email string, password ...string) (string, error)
 	Signup(ctx context.Context, data createUser) (user *model.User, err error)
 	Update(ctx context.Context, id string, data updateUser) error
+	Delete(ctx context.Context, id string) error
 }
 
 type userStore struct {
@@ -165,4 +166,15 @@ func (s *userStore) Update(ctx context.Context, id string, data updateUser) erro
 	}
 
 	return nil
+}
+
+func (s *userStore) Delete(ctx context.Context, id string) error {
+	// TODO: do something before deleting the user
+
+	_, err := s.db.NewDelete().
+		Model((*model.User)(nil)).
+		Where("id = ?", id).
+		Exec(ctx)
+
+	return err
 }
